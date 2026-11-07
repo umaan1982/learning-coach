@@ -143,6 +143,16 @@ Tags: `b1` plus a topic (`wohnen`, `arbeit`, …) or the pattern tag (`case-afte
 14. Relative pronoun **dem/den/der/deren**
 15. Präteritum vs Perfekt (writing vs speaking)
 
+## 7a. Skills (values for the `skill` column in errors.csv)
+`speaking` · `writing` · `reading` · `listening` · `vocab` · `grammar`
+
+## 7b. Onboarding extras (ask once, in one short message)
+1. **Exam booking:** which test centre and city? June sittings fill up early, so register as soon as dates open. Put the real date into `deadline`.
+2. **Format:** paper or digital at that centre? Practise in the same format.
+3. **External level check (optional):** the Goethe-Institut's free online placement test (*Einstufungstest*) as a cross-check of our own placement.
+4. **Speaking-aloud time:** if no slot allows `speak_aloud`, ask for 10–15 min, about 3×/week (home or a walk). Sprechen and pronunciation can't be trained silently.
+5. **A human speaking partner** (tutor, tandem, class) from the Build phase on, for at least a few sessions before the exam.
+
 ## 8. Phase plan template (count back from the exam date)
 | Phase | Weeks before exam | Focus | Weekly mock |
 |-------|-------------------|-------|-------------|

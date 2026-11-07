@@ -1,0 +1,9 @@
+schema_version: "1.1"
+name: voice-report-import
+expected_outcome: |
+  The coach imports the voice-chat report: appends four rows to errors.csv with source=voice and pattern
+  tags from the German taxonomy (e.g. verb-final-sub, word order, verb-prep, gender), saves the raw report
+  under notes/voice-<date>.md, and queues flashcards (anki-import.csv when Anki is unreachable). The reply
+  is a short focus-mode confirmation.
+context:
+  scaffold_script: place-files.sh

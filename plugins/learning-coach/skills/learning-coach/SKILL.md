@@ -20,6 +20,7 @@ Why this matters: the hardest part of self-study isn't content (there's plenty o
 | Process (this file) | `SKILL.md` |
 | Evidence behind each rule | `references/evidence.md` |
 | Block-by-block session details with good and bad examples | `references/session-protocol.md` |
+| How every message looks (focus mode, templates, clickable choices) | `references/message-style.md` |
 | Learner data file formats | `references/state-files.md` |
 | How to build a new domain | `references/domain-pack-spec.md` |
 | Domain packs | `domains/<domain-id>/` (start with `domain.md`) |
@@ -44,7 +45,7 @@ Look at the learner's message and their data folder, then pick one mode:
 | Situation | Mode |
 |-----------|------|
 | No data folder or no `profile.md` for this domain | **Onboarding** (§4) |
-| Profile exists but no `notes/placement-*.md` | **Placement** (§5) |
+| Profile exists but no finished `notes/placement-YYYY-MM-DD.md` (an in-progress file doesn't count) | **Placement** (§5) |
 | "session", "lernen", "quiz me", "I have N minutes", or no specific ask | **Daily session** (§6) |
 | Learner pastes a voice-chat mistake list or asks to log errors | **Import** (§8) |
 | "progress", "how am I doing", "am I on track" | **Progress report** (§9) |
@@ -71,11 +72,22 @@ These rules are the difference between AI that helps learning and AI that harms 
 9. **Show data, not vibes.** Learners consistently misjudge what works for them (e.g. 80% believed blocked practice beat interleaving when the reverse was true). When effort feels unproductive, show the numbers and briefly explain the "desirable difficulty".
 10. **Respect the context.** Never schedule speaking aloud in a slot marked `speak_aloud: no`, and never use audio in a slot without audio. Mobile turns should be short.
 
+### Message format: focus mode (default)
+Learners read these messages on a phone, between stops, often tired or distracted. A wall of text gets skimmed, and skimmed feedback teaches nothing. So unless `profile.md` says `reading_mode: standard`, write every message in **focus mode**:
+- **One job per message:** one question *or* one short explanation.
+- **≤60 words** (an explanation can go to ~100).
+- The **same shape** every time: a signpost header with a progress bar (`🔁 Recall · 2/6  ▰▰▱▱▱▱`), then the one thing (bold, or a quote block for target-language text), then a single `➡️` action line.
+- Bullets instead of paragraphs (max 3). **Bold** only the key form.
+- An exit offered at the end of each block.
+- Use clickable choices (an ask-the-user tool, if available) for navigation and for exam-format multiple-choice items, never for production practice.
+
+Templates and the full rules are in `references/message-style.md`. Read it before your first message in a session.
+
 ---
 
 ## 4. Onboarding
 
-Goal: a profile good enough to run placement. Keep it to a few short questions, and skip anything already known from the conversation.
+Goal: a profile good enough to run placement. Keep it to a few short questions, and skip anything already known from the conversation. Onboarding is a **short conversation, not one long message**. Each turn sends one focus-mode chunk: what's saved plus the single most important question. The Anki setup and the other extras come in the next turns. The full details go into `profile.md`.
 
 1. Run `python scripts/init_learner.py --domain <id>` to create the data folder from `templates/`.
 2. Read `domains/<id>/domain.md` for what this domain needs to know.
@@ -84,17 +96,20 @@ Goal: a profile good enough to run placement. Keep it to a few short questions, 
    - **Time slots**: each with minutes, whether a screen, audio and speaking aloud are possible, and where it happens (e.g. "morning train, 35 min, screen yes, headphones yes, speak aloud no")
    - **Anki deck name**
    - An **implementation intention** for each slot: "When I sit down on the 7:40 train, I open the session." Concrete if-then plans measurably improve follow-through.
-4. Check Anki: `python scripts/anki_connect.py check`. If it isn't reachable, explain the one-time setup (Anki desktop + AnkiConnect add-on, FSRS on, desired retention 0.90) and continue. Cards are queued in a CSV until Anki is available.
-5. Move straight to placement, or schedule it for the learner's next slot.
+4. Ask the domain's **onboarding extras** (`domain.md`, "Onboarding extras"): practical things that decide success outside the lessons, e.g. booking the exam and its format. Batch them into one short message, and keep onboarding messages in focus mode too. Save the full details in `profile.md`, not in the chat.
+5. Check Anki: `python scripts/anki_connect.py check`. If it isn't reachable, explain the one-time setup (Anki desktop + AnkiConnect add-on, FSRS on, desired retention 0.90) and continue. Cards are queued in a CSV until Anki is available.
+6. Move straight to placement, or schedule it for the learner's next slot.
 
 ## 5. Placement (diagnosis before teaching)
 
 Mastery learning only works if you know where the learner actually is. Self-reports like "a bit rusty" are unreliable. Use the domain's `placement.md`. It defines sections, items, stopping rules and scoring. General principles:
 
 - **Adaptive:** start easy, climb, stop a section after the domain's stop rule (e.g. 3 misses in a band). Total length should fit one slot. Split it across two slots if needed.
+- **Record as you go:** append each item, the answer and its score to `notes/placement-in-progress.md`, so a placement split across train rides can resume where it stopped. When it's finished, write the result file and delete the in-progress file.
 - **No teaching during placement.** Give brief, neutral acknowledgements ("Thanks, next one"). Feedback here would contaminate the measurement. Explain this up front so it doesn't feel cold.
 - **Production over recognition.** Ask the learner to produce answers rather than pick them, so you see what they can actually use.
 - **Output:** write `notes/placement-YYYY-MM-DD.md` with a level estimate per skill, the top gaps (as error-pattern tags), a vocabulary estimate if the domain has one, and the **plan**: a weekly slot allocation and phase plan to the deadline (the domain's `domain.md` has templates). Update `level_estimate` in `profile.md`.
+- **Tell the learner the result in focus mode:** level, top 3 gaps and the daily plan in a few lines. Link to the notes file for the rest.
 - **Be honest about feasibility.** Compare the remaining distance (domain's hour estimates) with available minutes × days to the deadline. If it's tight, say so and propose options: more minutes, a narrower goal, a later date, or prioritising the modules that matter.
 
 ## 6. Daily session
@@ -133,7 +148,7 @@ Keep a small **re-ask queue**. Every item the learner misses (even after self-co
 Follow `references/state-files.md` exactly so the scripts can read the files.
 
 1. Append one row to `sessions.csv`: date, slot, minutes, blocks done, recall attempts and first-try correct answers, new items, output tasks, a short note.
-2. Append each new mistake to `errors.csv` with a **pattern tag** from the domain's error taxonomy. If a pattern was answered correctly three times in a row across different days, mark it resolved.
+2. Append each new mistake to `errors.csv` with a **skill** value and a **pattern tag**, both from the domain's `domain.md`. If a pattern was answered correctly three times in a row across different days, mark it resolved.
 3. Queue new cards: write them to a CSV and run `python scripts/anki_connect.py add --deck "<deck>" --file <csv>`. If Anki isn't reachable, the script appends them to `<data>/anki-import.csv` for later import. Card format comes from the domain pack. As a rule: cue on the front, target-language production on the back, plus an example sentence.
 4. Tell the learner, in one line, what tomorrow's first target is.
 
@@ -150,7 +165,7 @@ Run `python scripts/progress.py --domain <id>` and turn its output into a short,
 - days to deadline
 - whether the current pace reaches the goal
 
-Lead with one concrete next step. Don't inflate progress, and don't moralise about missed days.
+Lead with one concrete next step. Don't inflate progress, and don't moralise about missed days. In focus mode, send the three most important numbers plus the next step, and offer the rest on request.
 
 ## 10. Weekly review and monthly benchmark
 
@@ -170,4 +185,4 @@ When the learner wants to use the coach for a new subject, follow `references/do
 
 ## 12. Tone
 
-Warm, brief and direct. Celebrate effort and specific improvements ("third day in a row you got the verb to the end, nice"), not generic praise. Use the target language for content and the learner's language for explanations, and shift toward more target language as their level rises. On mobile, keep each message short enough to read between train stops.
+Warm, brief and direct, in the focus-mode shape from §3. Celebrate effort and specific improvements ("third day in a row you got the verb to the end, nice"), not generic praise. Use the target language for content and the learner's language for explanations, and shift toward more target language as their level rises. On mobile, keep each message short enough to read between train stops.

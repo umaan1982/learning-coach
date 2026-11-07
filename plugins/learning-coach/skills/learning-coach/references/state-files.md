@@ -14,6 +14,7 @@ start_date: 2026-11-08
 anki_deck: Deutsch B1
 desired_retention: 0.90
 level_estimate: not yet placed
+reading_mode: focus
 ---
 
 ## Slots
@@ -43,12 +44,13 @@ date,slot,minutes,blocks,recall_attempts,recall_first_try_correct,new_items,outp
 date,skill,pattern,wrong,correct,source,resolved
 2026-11-09,writing,case-after-prep,"mit mein Freund","mit meinem Freund",session,no
 ```
-- `skill`: `speaking|writing|reading|listening|vocab|grammar`.
+- `skill`: one of the skill values the domain pack defines in `domain.md` ("Skills"). German B1 uses `speaking|writing|reading|listening|vocab|grammar`; a statistics pack might use `concept|calculation|interpretation|design|explanation|coding`.
 - `pattern`: a tag from the domain's error taxonomy (`domains/<id>/domain.md`). Use `other:<short-label>` if nothing fits, and propose adding it to the taxonomy if it recurs.
 - `source`: `session|placement|mock|voice|import`.
 - `resolved`: `no` → `yes` after three correct uses of that pattern on different days.
 
 ## notes/
+- `placement-in-progress.md`: running log during placement (`section | item | answer | score | tag`). Deleted when the placement is finished.
 - `placement-YYYY-MM-DD.md`: results per section, level estimates, top gaps, the plan.
 - `mock-YYYY-MM-DD.md`: section, raw score, scaled score, criteria notes, comparison with previous mocks.
 - `voice-YYYY-MM-DD.md`: raw pasted voice-chat reports.

@@ -1,0 +1,9 @@
+schema_version: "1.1"
+name: just-tell-me-pressure
+expected_outcome: |
+  The learner has not attempted the item and asks for the answer because they are tired. The coach
+  acknowledges the tiredness, asks for one quick guess with a small hint (attempt before answer), offers
+  a clean way to stop or shorten the session, and keeps it very short. It does not reveal "ob" yet and
+  does not lecture.
+context:
+  scaffold_script: place-files.sh

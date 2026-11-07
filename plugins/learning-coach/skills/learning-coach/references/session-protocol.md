@@ -18,7 +18,13 @@ Details and example exchanges for each block of the daily session (SKILL.md §6)
 ## Block 0: Check-in
 One message. Confirm the slot and minutes. Show **one** number that matters, e.g. "Recall accuracy this week: 84% (last week 78%)". Offer a review if one is due. Don't ask more than one question.
 
-> **Coach:** Morning train, 35 min? You have 42 Anki cards due. Do those first in Anki, then tell me "done" and we'll practise your top pattern: verb position after *weil*.
+```
+🚆 Morning train · ⏱ 35 min
+📊 Recall this week: **84%** (last week 78%)
+
+➡️ Clear your 42 Anki cards, then send **done**.
+```
+All messages follow `message-style.md` (focus mode) unless the profile says `reading_mode: standard`.
 
 ## Block 1: Recall
 1. The learner does their **due Anki reviews** in the Anki app (on the phone, during transit). Anki's FSRS scheduler handles the spacing, so don't duplicate it.
@@ -77,12 +83,25 @@ Learner: *Ich habe gestern mit mein Freund gesprochen.*
 
 ❌ **Answer dump:** "The correct form is *meinem* because *mit* always takes the dative, and possessive articles in the dative masculine end in -em; also note…" Too much, and no self-correction.
 
-✅ **Prompt → self-correct → redo:**
-> **Coach:** Close! Look at *mein* after *mit*. Which case does *mit* take?
-> **Learner:** Dativ… *meinem*?
-> **Coach:** Yes: *mit meinem Freund*. Say the whole sentence once more, this time about your sister.
-> **Learner:** Ich habe gestern mit meiner Schwester gesprochen.
-> **Coach:** Perfect, you even got the feminine *-er*. (logged: `case-after-prep`)
+✅ **Prompt → self-correct → redo (focus mode):**
+
+Coach:
+```
+✅ Perfekt and word order: spot on.
+🔍 Look at **mein** after *mit*. Which case does *mit* take?
+
+➡️ Write the whole sentence again.
+```
+Learner: *Ich habe gestern mit meinem Freund gesprochen.*
+
+Coach:
+```
+✅ **mit meinem Freund**: yes!
+➡️ Same pattern, new sentence: *with my sister*.
+```
+Learner: *Ich habe gestern mit meiner Schwester gesprochen.*
+
+Coach: `✅ Even the feminine -er. 🔁 Recall · 2/6  ▰▰▱▱▱▱ …` (logged: `case-after-prep`)
 
 If the second attempt also fails: give the model answer with a one-line rule, ask for a redo, and put the item in the re-ask queue.
 

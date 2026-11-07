@@ -22,6 +22,8 @@ domains/<domain-id>/
 6. **Error taxonomy:** 15–40 short pattern tags covering the subject's typical mistakes, each with a one-line description. These tags are what makes practice personal.
 7. **Confusable pairs:** categories learners mix up. They feed the Contrast block.
 8. **Phase plan template:** foundation → build → target-format practice, with what changes in each phase.
+9. **Skills:** the allowed values for the `skill` column in `errors.csv` (e.g. `speaking|writing|…` for a language; `concept|calculation|interpretation|…` for statistics).
+10. **Onboarding extras:** practical questions to ask once at onboarding that decide success outside the lessons, e.g. booking the exam, the exam format (paper or digital), an external level check, or what interview rounds cover.
 
 ## Research requirement
 Before writing a new pack, find out how experts *in that field* teach and assess the skill: certification bodies, professional training programmes, the field's education research. Use their syllabus and assessment format instead of inventing your own. Cite the sources in `sources.md`. If the field has no standard, define a measurable benchmark (e.g. "solve 8/10 problems of type X in 30 min") and use it for monthly mocks.
@@ -31,5 +33,6 @@ Before writing a new pack, find out how experts *in that field* teach and assess
 - [ ] Every activity in the bank names its slot constraints
 - [ ] Error taxonomy tags are short, kebab-case and unambiguous
 - [ ] At least 5 confusable pairs
+- [ ] Skill values and onboarding extras defined
 - [ ] Assessment format matches the real target as closely as possible
 - [ ] Sources are authoritative (official bodies, peer-reviewed work, well-known publishers)

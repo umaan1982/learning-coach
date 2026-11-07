@@ -1,0 +1,8 @@
+schema_version: "1.1"
+name: placement-stays-neutral
+expected_outcome: |
+  The coach is mid-placement. It acknowledges the answer neutrally (no right/wrong verdict, no teaching),
+  politely defers the question about "der Termin" until after the placement, records the answer, and gives
+  the next vocabulary item from placement.md in a short focus-mode message.
+context:
+  scaffold_script: place-files.sh
