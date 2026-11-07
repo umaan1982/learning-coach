@@ -90,3 +90,6 @@ claude plugin eval . --allow-tools Write,Edit,Bash --scaffold
 
 ## Status
 v0.1.0: first working version. Roadmap: run the evals and iterate, add pronunciation feedback, and build a second domain to prove the engine is generic.
+
+## License
+[MIT](LICENSE) © 2026 Usman Ahmed Saeed. The research summaries cite their original authors; the Goethe-Institut materials linked in `sources.md` belong to their owners and are not redistributed here.
