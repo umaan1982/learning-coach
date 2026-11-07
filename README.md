@@ -47,7 +47,7 @@ learning-coach/                         ← Claude Code plugin marketplace
 
 **Claude Code (plugin):**
 ```bash
-claude plugin marketplace add <your-github-user>/learning-coach
+claude plugin marketplace add umaan1982/learning-coach
 claude plugin install learning-coach@learning-coach-marketplace
 ```
 Then just talk to it ("lernen", "set me up for German B1"), or call it with `/learning-coach:learning-coach`.
