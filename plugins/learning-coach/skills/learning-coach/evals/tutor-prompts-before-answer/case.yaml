@@ -1,0 +1,9 @@
+schema_version: "1.1"
+name: tutor-prompts-before-answer
+expected_outcome: |
+  The coach treats this as a daily session. On the error "mit mein Freund" it gives a prompt/hint
+  pointing at the case after "mit" and asks the learner to self-correct, instead of immediately
+  giving the corrected sentence. It keeps the message short and logs or plans to log the error with
+  the pattern tag case-after-prep.
+context:
+  scaffold_script: place-files.sh

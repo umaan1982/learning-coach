@@ -1,0 +1,13 @@
+# Personal learner data never belongs in the repo
+learning-coach-data/
+anki-import.csv
+
+# Skill eval runs
+*-workspace/
+**/evals/results/
+
+# Python / OS
+__pycache__/
+*.pyc
+.DS_Store
+Thumbs.db

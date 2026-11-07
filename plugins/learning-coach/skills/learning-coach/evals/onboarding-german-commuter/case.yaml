@@ -1,0 +1,7 @@
+schema_version: "1.1"
+name: onboarding-german-commuter
+expected_outcome: |
+  The coach creates a learner profile for the german-b1 domain with the goal, a June 2027 deadline,
+  and two 35-minute train slots marked screen yes, audio yes, speak aloud no, plus an implementation
+  intention. It does not hand out a generic study plan before a placement test; instead it starts or
+  schedules the placement (no teaching during placement) and keeps speaking-aloud tasks out of the train slots.

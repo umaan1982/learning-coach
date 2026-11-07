@@ -1,0 +1,8 @@
+schema_version: "1.1"
+name: new-domain-scaffold
+expected_outcome: |
+  The coach recognises there is no statistics domain pack and follows the domain-pack spec: it creates
+  domains/<statistics-id>/ with domain.md (strand mapping, activity bank with slot constraints, card format,
+  error taxonomy, confusable pairs, phase plan), placement.md, a syllabus, an assessment format and sources,
+  grounded in how the field assesses the skill (e.g. interview question types or a defined benchmark). It
+  does not modify SKILL.md for this subject.

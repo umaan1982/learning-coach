@@ -1,0 +1,14 @@
+{
+  "name": "learning-coach-marketplace",
+  "description": "Research-based learning coach skill for Claude",
+  "owner": {
+    "name": "Usman Ahmed Saeed"
+  },
+  "plugins": [
+    {
+      "name": "learning-coach",
+      "source": "./plugins/learning-coach",
+      "description": "Evidence-based personal learning coach: placement, daily sessions, spaced repetition (Anki), tutor-style feedback, progress tracking. Ships with a German B1 domain."
+    }
+  ]
+}
