@@ -1,0 +1,3 @@
+date,skill,pattern,wrong,correct,source,resolved
+2026-11-09,grammar,perfekt-aux,"ich habe gegangen","ich bin gegangen",session,no
+2026-11-09,writing,verb-final-sub,"weil ich habe keine Zeit","weil ich keine Zeit habe",placement,no
