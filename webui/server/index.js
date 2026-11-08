@@ -6,7 +6,7 @@ import { spawn } from "node:child_process";
 import fs from "node:fs";
 import http from "node:http";
 import path from "node:path";
-import { CLAUDE_BIN, claudeStatus, ensureLoggedIn, runTurn } from "./claude.js";
+import { CLAUDE_BIN, claudeStatus, ensureLoggedIn, getUsage, runTurn } from "./claude.js";
 import { DATA_ROOT, DOMAIN, DOMAIN_DIR, HOST, PORT, PROD, SANDBOX, SKILL_DIR, WEBUI_DIR, isInside } from "./config.js";
 import { addLearner, ctxFor, getLearner, learnerFromRequest, listLearners, renameLearner } from "./learners.js";
 import { parseCourseStatus } from "./course.js";
@@ -107,6 +107,9 @@ const routes = {
   },
 
   "GET /api/plan": async (req, url, ctx) => planState(ctx, ctestState(ctx)),
+
+  // Last known Claude usage (updated by every chat turn), so the meter shows without spending a turn.
+  "GET /api/usage": async () => ({ usage: getUsage() }),
 
   "GET /api/ctest": async (req, url, ctx) => ctestState(ctx),
 

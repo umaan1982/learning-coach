@@ -12,6 +12,7 @@ import Dashboard from "@/components/Dashboard.jsx";
 import Listen from "@/components/Listen.jsx";
 import LearnerSwitcher from "@/components/LearnerSwitcher.jsx";
 import LoginNotice from "@/components/LoginNotice.jsx";
+import UsageMeter, { SAVE_AND_PAUSE } from "@/components/UsageMeter.jsx";
 import Plan, { nextAction } from "@/components/Plan.jsx";
 import { cn } from "@/lib/utils";
 
@@ -52,7 +53,7 @@ function ClaudeStatus({ c }) {
       <TooltipTrigger asChild>
         <Badge variant="outline" className="gap-1.5">
           <span className={cn("size-2 rounded-full", ok ? "bg-emerald-500" : "bg-amber-500")} />
-          {label}
+          <span className="hidden lg:inline">{label}</span>
         </Badge>
       </TooltipTrigger>
       <TooltipContent>
@@ -89,8 +90,10 @@ export default function App() {
       .catch((e) => setPlanErr(e.message))
       .finally(() => setPlanLoading(false));
   };
+  const [usage, setUsage] = useState(null);
   useEffect(() => {
     recheck();
+    api.usage().then((r) => setUsage(r.usage)).catch(() => {});
   }, []);
   useEffect(() => {
     loadPlan();
@@ -106,14 +109,14 @@ export default function App() {
   return (
     <div className="flex h-screen flex-col bg-background">
       <header className="flex items-center gap-3 border-b px-5 py-2.5">
-        <div className="flex items-center gap-2 font-semibold">
+        <div className="flex items-center gap-2 font-semibold whitespace-nowrap">
           <span className="flex size-7 items-center justify-center rounded-lg bg-primary text-primary-foreground">
             <GraduationCap className="size-4" />
           </span>
           Learning coach
         </div>
         <LearnerSwitcher learner={info.learner} learners={info.learners} />
-        <Badge variant="secondary">{info.domain}</Badge>
+        <Badge variant="secondary" className="hidden xl:inline-flex">{info.domain}</Badge>
         {info.sandbox && (
           <Tooltip>
             <TooltipTrigger asChild>
@@ -123,6 +126,7 @@ export default function App() {
           </Tooltip>
         )}
         <div className="flex-1" />
+        <UsageMeter usage={usage} onSaveAndPause={() => sendRef.current(SAVE_AND_PAUSE)} />
         <ClaudeStatus c={c} />
       </header>
 
@@ -154,6 +158,7 @@ export default function App() {
             onAuthProblem={recheck}
             next={nextAction(plan)}
             onTurnDone={() => setRefreshKey((k) => k + 1)}
+            onUsage={setUsage}
           />
         </Boundary>
 

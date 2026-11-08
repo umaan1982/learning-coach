@@ -84,6 +84,12 @@ How it works: the page stores the choice in a cookie, and the server runs every 
 
 Shared between learners: the Claude subscription (and its usage limits), the browser, and Anki. In Anki, give each person their own Anki profile or deck (the coach asks for the deck name during setup). The sandbox has its own separate list of learners.
 
+## Usage limits
+
+Every `claude -p` turn reports the subscription's limits (`rate_limit_event`: utilization per 5-hour and weekly window, reset times; status `allowed`, `allowed_warning` past ~90%, or blocked). The server caches the last value for the login (`learners`-independent, `<profiles>/usage.json`) and `GET /api/usage` serves it, so the header meter shows on page load: "5-hour 92% · resets 01:40 · week 25%", as of the last reply. Amber at ≥80% ("Near your limit: finish this step") with a **Save & pause** button that asks the coach to log the session now; red at ≥95% or when blocked.
+
+From 85% of the 5-hour window, each turn's message starts with a short note *from the UI* asking the coach to save progress to the learner files first (a note on the message rather than the session prompt, because Claude Code records the session prompt once, when a session starts). If a limit stops a turn, the chat says when it resets, puts your message back in the input box with a **Retry** button, and keeps the session id (per learner, in the browser), so you continue the same conversation after the reset. The learner files are always the real record.
+
 ## Not logged in
 
 The server checks `claude auth status` before a chat turn (until it succeeds once) and maps the CLI's own "Not logged in" result the same way. Nothing is sent to Claude; the chat shows **Claude CLI not logged in** with the exact command to run once in your own terminal, a Copy button and **Check again**. The message stays in the input box for after login. The UI never runs the login itself.

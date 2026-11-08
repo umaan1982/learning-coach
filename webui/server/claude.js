@@ -5,7 +5,7 @@ import { execFileSync, spawn } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { DATA_ROOT, DOMAIN, SANDBOX, SKILL_DIR } from "./config.js";
+import { DATA_ROOT, DOMAIN, PROFILES_DIR, SANDBOX, SKILL_DIR } from "./config.js";
 import { listLearners } from "./learners.js";
 
 const isWin = process.platform === "win32";
@@ -119,6 +119,41 @@ export function ensureLoggedIn() {
 
 const NOT_LOGGED_IN = /not logged in|please run \/login|invalid api key|oauth token (has )?expired/i;
 
+// ---------------------------------------------------------------- usage limits
+// The CLI reports the subscription's limits on every turn (rate_limit_event: utilization 0-1 per
+// window, resetsAt in unix seconds). One cache for the whole login, not per learner (it's one
+// subscription), kept on disk so a page load or server restart shows the last known value.
+const USAGE_FILE = path.join(PROFILES_DIR, "usage.json");
+let lastUsage = (() => {
+  try {
+    return JSON.parse(fs.readFileSync(USAGE_FILE, "utf8"));
+  } catch {
+    return null;
+  }
+})();
+export const getUsage = () => lastUsage;
+// Statuses seen: "allowed", "allowed_warning" (past a threshold, still working), "rejected" (blocked).
+const isBlocked = (status) => !!status && !String(status).startsWith("allowed");
+
+function rememberUsage(info) {
+  const w = info?.unifiedWindows || {};
+  lastUsage = {
+    status: info?.status || "allowed",
+    resetsAt: info?.resetsAt || null,
+    fiveHour: w.five_hour || null,
+    sevenDay: w.seven_day || null,
+    at: Date.now(),
+  };
+  try {
+    fs.writeFileSync(USAGE_FILE, JSON.stringify(lastUsage));
+  } catch { /* the meter still works for this run */ }
+  return lastUsage;
+}
+
+// Never triggered for real yet, so matched loosely; "not logged in" is checked first.
+const LIMIT_REACHED = /\blimit\b|usage|rate.?limit/i;
+const NEAR_LIMIT = 0.85;
+
 // ---------------------------------------------------------------- one chat turn
 // Kept deliberately small: it says *where* the coach is running, not *how* to coach.
 // The coaching process stays in SKILL.md and references/.
@@ -211,7 +246,17 @@ export function runTurn({ message, sessionId, model, ctx }, emit) {
   if (model || process.env.LC_MODEL) args.push("--model", model || process.env.LC_MODEL);
 
   const child = spawnClaude(args, ctx.dataRoot);
-  child.stdin.end(message, "utf8");
+  // Nearly out of usage: tell the coach (not as the learner) to save progress before anything else,
+  // so a limit hit mid-session doesn't lose the placement answers or the session log.
+  const u5 = lastUsage?.fiveHour?.utilization;
+  const note =
+    u5 >= NEAR_LIMIT
+      ? `[Note from the web UI, not from the learner: the Claude usage limit is almost used up (${Math.round(u5 * 100)}% of the ` +
+        `5-hour window). Before anything else, save progress to the learner files (e.g. notes/placement-in-progress.md, ` +
+        `a sessions.csv row, errors.csv), then continue normally.]\n\n`
+      : "";
+  child.stdin.end(note + message, "utf8");
+  let limitHit = false;
 
   let buf = "";
   let stderr = "";
@@ -236,6 +281,12 @@ export function runTurn({ message, sessionId, model, ctx }, emit) {
       case "system":
         if (o.subtype === "init") emit({ type: "session", id: o.session_id, model: o.model });
         break;
+      case "rate_limit_event": {
+        const u = rememberUsage(o.rate_limit_info);
+        if (isBlocked(u.status)) limitHit = true; // "allowed_warning" (e.g. past 90%) is still allowed
+        emit({ type: "usage", usage: u });
+        break;
+      }
       case "stream_event": {
         const ev = o.event || {};
         if (ev.type === "message_start") {
@@ -273,6 +324,12 @@ export function runTurn({ message, sessionId, model, ctx }, emit) {
         if (error && NOT_LOGGED_IN.test(error)) {
           authOk = false;
           emit({ type: "done", ok: false, code: "not_logged_in", error, loginCommand: loginCommand() });
+          break;
+        }
+        if (error && (limitHit || LIMIT_REACHED.test(error))) {
+          const w = [lastUsage?.fiveHour, lastUsage?.sevenDay].find((x) => x && isBlocked(x.status));
+          const resetsAt = w?.resetsAt || lastUsage?.resetsAt;
+          emit({ type: "done", ok: false, code: "limit_reached", error, resetsAt: resetsAt || null, sessionId: o.session_id });
           break;
         }
         emit({ type: "done", ok: !o.is_error, error, sessionId: o.session_id, durationMs: o.duration_ms });

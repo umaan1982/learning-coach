@@ -4,6 +4,7 @@ import { chatTurn } from "@/api.js";
 import Markdown from "@/Markdown.jsx";
 import LoginNotice from "@/components/LoginNotice.jsx";
 import MicButton from "@/components/MicButton.jsx";
+import { fmtReset } from "@/components/UsageMeter.jsx";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -88,7 +89,7 @@ function Steps({ items, running }) {
 
 const SUGGESTIONS = ["lernen", "I have 20 minutes", "Where am I in the course?", "Continue the placement"];
 
-export default function Chat({ info, sendRef, onRecheck, onAuthProblem, next, onTurnDone }) {
+export default function Chat({ info, sendRef, onRecheck, onAuthProblem, next, onTurnDone, onUsage }) {
   const scope = `${info.domain}|${info.dataRoot}`;
   const [turns, setTurns] = usePersisted(`lc-turns|${scope}`, []);
   const [sessionId, setSessionId] = usePersisted(`lc-session|${scope}`, null);
@@ -135,6 +136,7 @@ export default function Chat({ info, sendRef, onRecheck, onAuthProblem, next, on
     ]);
     ctrl.current = chatTurn({ message, sessionId }, (ev) => {
       if (ev.type === "session") setSessionId(ev.id);
+      else if (ev.type === "usage") onUsage?.(ev.usage);
       else if (ev.type === "done") {
         if (ev.sessionId) setSessionId(ev.sessionId);
         updateLast((t) => ({
@@ -144,9 +146,10 @@ export default function Chat({ info, sendRef, onRecheck, onAuthProblem, next, on
           error: ev.error,
           code: ev.code,
           loginCommand: ev.loginCommand,
+          resetsAt: ev.resetsAt,
           durationMs: ev.durationMs,
         }));
-        if (ev.code === "not_logged_in") {
+        if (ev.code === "not_logged_in" || ev.code === "limit_reached") {
           setDraft(shown); // nothing was sent to Claude: keep the message (and recording) for after login
           setSpoken(voice);
           onAuthProblem?.();
@@ -283,6 +286,22 @@ export default function Chat({ info, sendRef, onRecheck, onAuthProblem, next, on
                   {t.status === "error" &&
                     (t.code === "not_logged_in" ? (
                       <LoginNotice command={t.loginCommand} onRecheck={onRecheck} />
+                    ) : t.code === "limit_reached" ? (
+                      <div className="mt-1 space-y-2 rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-sm">
+                        <div className="font-medium">
+                          Usage limit reached.{t.resetsAt ? ` Resets at ${fmtReset(t.resetsAt)}.` : ""}
+                        </div>
+                        <div className="text-muted-foreground">
+                          Your chat and your learner files are saved. Your message is back in the input box; continue after the
+                          reset and the coach picks up this conversation.
+                        </div>
+                        {i === turns.length - 1 && (
+                          <Button size="sm" variant="outline" onClick={() => send()} disabled={busy || !draft.trim()}>
+                            <RotateCcw />
+                            Retry
+                          </Button>
+                        )}
+                      </div>
                     ) : (
                       <div className="text-sm text-destructive">{t.error}</div>
                     ))}

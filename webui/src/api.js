@@ -14,6 +14,7 @@ export const api = {
   info: () => req("GET", "/api/info"),
   course: () => req("GET", "/api/course"),
   plan: () => req("GET", "/api/plan"),
+  usage: () => req("GET", "/api/usage"),
   addLearner: (name) => req("POST", "/api/learners", { name }),
   renameLearner: (id, name) => req("POST", "/api/learners/rename", { id, name }),
   ctest: () => req("GET", "/api/ctest"),
