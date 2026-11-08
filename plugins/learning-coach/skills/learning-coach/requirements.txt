@@ -1,0 +1,3 @@
+# Optional: core scripts (init_learner, progress, dashboard, anki_connect) use only the standard library.
+edge-tts>=7          # speak.py: German audio for listening practice (needs internet)
+faster-whisper>=1.2  # pronounce.py: offline speech recognition for pronunciation scoring

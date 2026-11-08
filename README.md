@@ -22,7 +22,9 @@ The process is generic. Subjects plug in as **domain packs**. The first domain i
 | (first time) | Placement test across vocabulary, grammar, reading, writing, speaking and listening, then a plan with a feasibility check |
 | "lernen" / "quiz me" / "I have 20 min" | Daily session: recall → learn → contrast → use it → understand → log |
 | *pastes a voice-chat mistake list* | Imports the errors into the log and creates flashcards |
-| "how am I doing?" | Progress report: streak, minutes, recall accuracy trend, top error patterns, days left |
+| "how am I doing?" | Progress report plus a visual dashboard (HTML, works offline, light/dark): days left, streak, minutes per day, recall accuracy vs the 80–90% target, open mistake patterns, strand mix, speech clarity |
+| "Evening train, let's do listening" | Generated German audio (two-voice exam-style dialogues, slow-then-normal) with one question at a time |
+| *sends a voice recording* | Pronunciation check: clarity %, words heard wrongly, speech rate and pauses |
 | weekly / monthly | Mixed review, fluency drill, timed mock in the official exam format |
 | "can I use this for statistics?" | Builds a new domain pack following the spec |
 
@@ -37,7 +39,9 @@ learning-coach/                         ← Claude Code plugin marketplace
     └── skills/learning-coach/
         ├── SKILL.md                    ← the process (domain-agnostic)
         ├── references/                 ← evidence, session protocol, file formats, domain-pack spec
-        ├── scripts/                    ← init_learner.py, anki_connect.py, progress.py (stdlib only)
+        ├── scripts/                    ← init_learner, anki_connect, progress, dashboard (stdlib only);
+        │                                  speak (edge-tts), pronounce (faster-whisper)
+        ├── requirements.txt            ← optional packages for audio and pronunciation
         ├── templates/                  ← learner profile + CSV templates
         ├── domains/german-b1/          ← first domain pack
         └── evals/                      ← test cases (claude plugin eval format)
@@ -57,6 +61,10 @@ Then just talk to it ("lernen", "set me up for German B1"), or call it with `/le
 **Use from your phone:** start the session on your computer and turn on Remote Control. Then open the Claude app → **Code** and continue there. Your computer has to stay on.
 
 **Listening and speaking:** `pip install edge-tts` (internet needed). The coach then generates German audio (single sentences, slow-then-normal, or two-voice exam-style conversations) and sends the MP3 to your phone. For speaking, answer through the Claude app's mic (dictation). The coach compares the transcript with the target sentence. With `--audio`, flashcards get sound too. See [`references/audio-practice.md`](plugins/learning-coach/skills/learning-coach/references/audio-practice.md).
+
+**Pronunciation check:** `pip install faster-whisper` (offline; the speech model downloads once, ~460 MB). Record a voice memo, attach it in the Claude app, and the coach scores it against the sentence you meant to say: clarity %, words heard wrongly, words/min and pauses. This is intelligibility to a speech recogniser, not a phonetician's grade.
+
+**Install everything optional at once:** `pip install -r plugins/learning-coach/skills/learning-coach/requirements.txt`
 
 ## Your data
 Learner data never lives in this repo. By default it's in `~/learning-coach-data/<domain>/` (override with `LEARNING_COACH_DATA`):
@@ -91,7 +99,7 @@ claude plugin eval . --allow-tools Write,Edit,Bash --scaffold
 ```
 
 ## Status
-v0.2.0: focus-mode messages, listening (generated German audio) and speaking (mic dictation) loops, audio flashcards. Roadmap: run the evals and iterate, add pronunciation feedback, and build a second domain to prove the engine is generic.
+v0.3.0: visual progress dashboard and offline pronunciation scoring, on top of focus-mode messages, listening and speaking loops, and audio flashcards. Roadmap: phoneme-level pronunciation scoring, and a second domain to prove the engine is generic.
 
 ## License
 [MIT](LICENSE) © 2026 Usman Ahmed Saeed. The research summaries cite their original authors; the Goethe-Institut materials linked in `sources.md` belong to their owners and are not redistributed here.

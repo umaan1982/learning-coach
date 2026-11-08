@@ -25,7 +25,8 @@ Why this matters: the hardest part of self-study isn't content (there's plenty o
 | Learner data file formats | `references/state-files.md` |
 | How to build a new domain | `references/domain-pack-spec.md` |
 | Domain packs | `domains/<domain-id>/` (start with `domain.md`) |
-| Helper scripts | `scripts/` (`init_learner.py`, `anki_connect.py`, `progress.py`, `speak.py` for audio) |
+| Helper scripts | `scripts/`: `init_learner.py`, `anki_connect.py`, `progress.py`, `dashboard.py` (visual progress page), `speak.py` (German audio), `pronounce.py` (scores a voice recording) |
+| Optional Python packages | `requirements.txt` (edge-tts for audio, faster-whisper for pronunciation). Everything else is standard library. |
 
 **Learner data** lives outside the skill so the skill can be shared publicly without personal data. It sits in `~/learning-coach-data/<domain-id>/`, or in `$LEARNING_COACH_DATA/<domain-id>/` if that variable is set:
 
@@ -169,6 +170,8 @@ Run `python scripts/progress.py --domain <id>` and turn its output into a short,
 - whether the current pace reaches the goal
 
 Lead with one concrete next step. Don't inflate progress, and don't moralise about missed days. In focus mode, send the three most important numbers plus the next step, and offer the rest on request.
+
+**Visual version:** `python scripts/dashboard.py --domain <id>` writes `<data>/<id>/dashboard.html`, a self-contained page that works offline, in light and dark mode, with tap tooltips. It shows days to the goal, streak, minutes, recall accuracy against the 80–90% band, open mistake patterns, the strand mix, and speech clarity if recordings exist. If a send-file tool is available, send the HTML so it opens on the phone. Offer it with the weekly review and whenever the learner asks "how am I doing?".
 
 ## 10. Weekly review and monthly benchmark
 

@@ -56,6 +56,24 @@ The learner dictates the answer to a prompt. Give feedback on 1–2 patterns, in
 **3. Shadowing**
 Send audio with `--speed both`. The learner speaks along with the normal version: aloud only in a `speak_aloud: yes` slot, otherwise silently (mouthing).
 
+**4. Recorded check: pronunciation score** (weekly, or whenever the learner sends a voice recording)
+Dictation only shows the coach *text*. For a real look at how the learner sounds, they record a voice memo (phone recorder) and attach it in the Claude app. Through Remote Control the file lands on the PC. Then:
+```
+python scripts/pronounce.py --audio <file> --target "<the sentence they meant to say>" --log <domain>
+```
+It runs speech recognition offline (`pip install faster-whisper`; the model downloads once) and reports:
+- **Clarity:** % of target words the recogniser heard clearly.
+- **Per word:** ok / unclear / heard as X / missing.
+- **Fluency:** words per minute, and pauses longer than 0.4 s measured from the audio itself.
+
+The result is logged to `pronunciation.csv` and shows up as a clarity tile on the dashboard. Reply in focus mode:
+```
+🗣️ Clarity 83%  ·  225 words/min  ·  no long pauses
+🔍 schön was heard as schon. Round your lips for the ü.
+➡️ Listen and record it once more.
+```
+Pair each flag with an audio model (`speak.py say "<word or sentence>" --speed both`) so the learner hears the target. Log flags as `pron-vowel` / `pron-consonant` / `fluency` only when they repeat. This measures **intelligibility to a recogniser**, not a phoneme-level grade: accents a human understands easily can still trip it up, and the reverse.
+
 ## Slot rules
 | Activity | Needs |
 |----------|-------|
@@ -71,3 +89,4 @@ On a quiet train (audio yes, speak no): listening loops, Mini-Diktat and silent 
 - **Dictation:** small studies only. It improves sound recognition, but transfer to overall listening isn't shown, so keep it short.
 - **Metacognitive listening cycle:** Vandergrift & Tafaghodtari (2010).
 - **Speech-recognition feedback for pronunciation:** computer-assisted pronunciation training has a medium effect (2024 meta-analysis), with the caveat that recognition errors aren't always learner errors.
+- **Fluency measures:** speech rate and pausing are among the temporal measures that best track how fluent listeners judge L2 speech to be (Kormos & Dénes 2004; Bosker et al. 2013) ◐. That's why the scorer reports words/min and pauses, not just accuracy.
