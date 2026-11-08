@@ -254,7 +254,12 @@ function Bullets({ items }) {
 }
 
 function CourseOverview({ c, reload, loading }) {
-  const st = c.status && STATUS[c.status.level];
+  // A plan that doesn't fit before the exam isn't "on track", even in week 1: course.py only
+  // compares where you are with where you should be, so check the spare time too.
+  const tooLong = c.plan && c.plan.bufferWeeks < 0;
+  const st = tooLong
+    ? { label: "Doesn't fit before the exam", className: "bg-red-500/15 text-red-700 dark:text-red-400" }
+    : c.status && STATUS[c.status.level];
   const pct = c.total ? Math.round((100 * c.done) / c.total) : 0;
   return (
     <Card>
@@ -285,6 +290,15 @@ function CourseOverview({ c, reload, loading }) {
                 {c.plan.bufferWeeks} weeks
               </div>
             </div>
+          </div>
+        )}
+        {tooLong && (
+          <div className="flex gap-2 rounded-lg border border-red-500/30 bg-red-500/10 p-2.5 text-sm">
+            <TriangleAlert className="mt-0.5 size-4 shrink-0 text-red-600" />
+            <span>
+              The course needs about {Math.abs(c.plan.bufferWeeks)} more weeks than you have. Ask the coach to shorten
+              Module 1 (3 days per unit) or to let you test out of units you already know.
+            </span>
           </div>
         )}
         {c.status && c.status.level !== "on-track" && c.status.advice && (
