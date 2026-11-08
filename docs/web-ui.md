@@ -45,10 +45,20 @@ claude -p --output-format stream-json --verbose --include-partial-messages
 
 Inputs have spell-check and autocorrect off, so the browser can't give away answers.
 
+## Not logged in
+
+The server checks `claude auth status` before a chat turn (until it succeeds once) and maps the CLI's own "Not logged in" result the same way. Nothing is sent to Claude; the chat shows **Claude CLI not logged in** with the exact command to run once in your own terminal, a Copy button and **Check again**. The message stays in the input box for after login. The UI never runs the login itself.
+
+If `claude` isn't on your PATH, the command uses the desktop app's copy, e.g.
+
+```powershell
+& "C:\Users\<you>\AppData\Roaming\Claude\claude-code\<version>\<hash>\claude.exe" auth login
+```
+
+That path changes when the desktop app updates the CLI; a standalone install (https://code.claude.com/docs/en/setup) gives a stable `claude` on PATH.
+
 ## Status (prototype)
 
-Tested on a sandbox data folder: C-test end to end (make → 4 texts → result, stop-early rule, overwrite warning), audio, dashboard, course status, 127.0.0.1-only binding and Host/Origin checks.
+Tested on a sandbox data folder: C-test end to end (make → 4 texts → result, stop-early rule, overwrite and blank-gap warnings, "Hand back to the coach"), audio, dashboard, course status, 127.0.0.1-only binding and Host/Origin checks. The CLI accepts the full flag set (it emits `system/init`), and its stream is parsed into the chat.
 
-Open:
-- Chat round-trip not yet verified: the CLI on this machine was not logged in (`Not logged in · Please run /login`).
-- A React "destroy is not a function" crash appeared after sending a chat message (some `useEffect` returns a non-function); needs a fix before use.
+Open: a full chat answer from the coach is not verified yet, because the CLI on this machine isn't logged in.

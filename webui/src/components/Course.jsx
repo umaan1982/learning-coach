@@ -9,7 +9,9 @@ export default function Course({ refreshKey }) {
     setErr(null);
     api.course().then(setData).catch((e) => setErr(e.message));
   };
-  useEffect(load, [refreshKey]);
+  useEffect(() => {
+    load();
+  }, [refreshKey]);
 
   const lines = (data?.text || "").split(/\r?\n/);
   return (

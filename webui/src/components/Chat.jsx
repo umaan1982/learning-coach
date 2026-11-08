@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { chatTurn } from "../api.js";
 import Markdown from "../Markdown.jsx";
+import LoginNotice from "./LoginNotice.jsx";
 
 // One coach session = one Claude Code session id, resumed with `--resume` for every turn.
 // The view is kept in localStorage so a page reload doesn't lose the lesson.
@@ -13,7 +14,9 @@ function usePersisted(key, initial) {
       return initial;
     }
   });
-  useEffect(() => localStorage.setItem(key, JSON.stringify(v)), [key, v]);
+  useEffect(() => {
+    localStorage.setItem(key, JSON.stringify(v));
+  }, [key, v]);
   return [v, setV];
 }
 
@@ -33,7 +36,7 @@ function appendEvent(turn, ev) {
   return { ...turn, parts };
 }
 
-export default function Chat({ info, sendRef }) {
+export default function Chat({ info, sendRef, onRecheck, onAuthProblem }) {
   const scope = `${info.domain}|${info.dataRoot}`;
   const [turns, setTurns] = usePersisted(`lc-turns|${scope}`, []);
   const [sessionId, setSessionId] = usePersisted(`lc-session|${scope}`, null);
@@ -42,7 +45,11 @@ export default function Chat({ info, sendRef }) {
   const ctrl = useRef(null);
   const endRef = useRef(null);
 
-  useEffect(() => endRef.current?.scrollIntoView({ block: "end" }), [turns]);
+  // Block body on purpose: newer Chromium returns a Promise from scrollIntoView(),
+  // and an effect must return nothing or a cleanup function.
+  useEffect(() => {
+    endRef.current?.scrollIntoView({ block: "end" });
+  }, [turns]);
 
   const updateLast = (fn) =>
     setTurns((ts) => {
@@ -61,7 +68,19 @@ export default function Chat({ info, sendRef }) {
       if (ev.type === "session") setSessionId(ev.id);
       else if (ev.type === "done") {
         if (ev.sessionId) setSessionId(ev.sessionId);
-        updateLast((t) => ({ ...t, status: ev.ok ? "done" : "error", error: ev.error, durationMs: ev.durationMs }));
+        updateLast((t) => ({
+          ...t,
+          parts: ev.code === "not_logged_in" ? [] : t.parts, // the notice replaces the CLI's own one-liner
+          status: ev.ok ? "done" : "error",
+          error: ev.error,
+          code: ev.code,
+          loginCommand: ev.loginCommand,
+          durationMs: ev.durationMs,
+        }));
+        if (ev.code === "not_logged_in") {
+          setDraft(message); // nothing was sent to Claude: keep the message for after login
+          onAuthProblem?.();
+        }
         setBusy(false);
       } else updateLast((t) => appendEvent(t, ev));
     });
@@ -96,7 +115,7 @@ export default function Chat({ info, sendRef }) {
           t.role === "user" ? (
             <div key={i} className="msg user">{t.text}</div>
           ) : (
-            <div key={i} className={`msg coach ${t.status}`}>
+            <div key={i} className={`msg coach is-${t.status}`}>
               {t.parts.map((p, j) =>
                 p.kind === "text" ? (
                   p.text ? <Markdown key={j} text={p.text} /> : null
@@ -111,7 +130,12 @@ export default function Chat({ info, sendRef }) {
                 ),
               )}
               {t.status === "streaming" && <span className="cursor">▍</span>}
-              {t.status === "error" && <div className="error">{t.error}</div>}
+              {t.status === "error" &&
+                (t.code === "not_logged_in" ? (
+                  <LoginNotice command={t.loginCommand} onRecheck={onRecheck} />
+                ) : (
+                  <div className="error">{t.error}</div>
+                ))}
             </div>
           ),
         )}

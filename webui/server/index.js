@@ -5,7 +5,7 @@
 import fs from "node:fs";
 import http from "node:http";
 import path from "node:path";
-import { CLAUDE_BIN, claudeStatus, runTurn } from "./claude.js";
+import { CLAUDE_BIN, claudeStatus, ensureLoggedIn, runTurn } from "./claude.js";
 import { DATA_ROOT, DOMAIN, DOMAIN_DIR, HOST, PORT, PROD, SANDBOX, SKILL_DIR, WEBUI_DIR, isInside } from "./config.js";
 import { runScript } from "./scripts.js";
 
@@ -154,6 +154,11 @@ async function chat(req, res) {
   const { message, sessionId } = await readBody(req);
   if (!message || !String(message).trim()) return json(res, 400, { error: "empty message" });
   res.writeHead(200, { "content-type": "application/x-ndjson; charset=utf-8", "cache-control": "no-store" });
+  const auth = CLAUDE_BIN ? ensureLoggedIn() : { ok: true }; // runTurn reports a missing CLI itself
+  if (!auth.ok) {
+    const s = auth.status;
+    return res.end(JSON.stringify({ type: "done", ok: false, code: "not_logged_in", error: "Claude CLI not logged in", loginCommand: s.loginCommand }) + "\n");
+  }
   const abort = runTurn({ message: String(message), sessionId }, (ev) => {
     if (ev.type === "audio") {
       if (!isInside(DATA_ROOT, ev.path)) return;

@@ -70,6 +70,9 @@ header .path { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; m
 .pill.good { border-color: var(--good); color: var(--good); }
 .pill.warn { border-color: var(--warn); color: var(--warn); }
 .banner { padding: 0.5rem 1rem; background: var(--quote); border-bottom: 1px solid var(--line); font-size: 0.9rem; }
+.login-notice { font-size: 0.9rem; }
+.login-notice pre { margin: 0.4rem 0; padding: 0.4rem 0.6rem; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; overflow-x: auto; user-select: all; }
+.msg .login-notice { border-left: 3px solid var(--warn); padding-left: 0.6rem; }
 main { flex: 1; display: grid; grid-template-columns: minmax(0, 1fr) 460px; min-height: 0; }
 .app.wide main { grid-template-columns: minmax(0, 1fr) minmax(460px, 55%); }
 aside { border-left: 1px solid var(--line); background: var(--panel); display: flex; flex-direction: column; min-height: 0; }
@@ -86,7 +89,7 @@ aside nav button.active { color: var(--text); border-color: var(--line); backgro
 .msg { max-width: 68ch; padding: 0.6rem 0.9rem; border-radius: 10px; }
 .msg.user { align-self: flex-end; background: var(--user); white-space: pre-wrap; }
 .msg.coach { align-self: flex-start; background: var(--panel); border: 1px solid var(--line); }
-.msg.coach.error { border-color: var(--bad); }
+.msg.coach.is-error { border-color: var(--bad); }
 .msg p { margin: 0.35rem 0; }
 .msg ul, .msg ol { margin: 0.35rem 0; padding-left: 1.4rem; }
 .msg blockquote { margin: 0.5rem 0; padding: 0.4rem 0.8rem; background: var(--quote); border-left: 3px solid var(--accent); border-radius: 4px; font-size: 1.05rem; }

@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from "react";
+import { Component, useEffect, useRef, useState } from "react";
 import { api } from "./api.js";
+import LoginNotice from "./components/LoginNotice.jsx";
 import Chat from "./components/Chat.jsx";
 import Course from "./components/Course.jsx";
 import CTest from "./components/CTest.jsx";
@@ -13,6 +14,25 @@ const TABS = [
   ["progress", "Progress"],
 ];
 
+// Keeps a bug in one pane from blanking the whole page.
+class Boundary extends Component {
+  state = { error: null };
+  static getDerivedStateFromError(error) {
+    return { error };
+  }
+  render() {
+    if (!this.state.error) return this.props.children;
+    return (
+      <div className="panel-body error">
+        {this.props.name} crashed: {String(this.state.error.message || this.state.error)}
+        <div className="row">
+          <button onClick={() => this.setState({ error: null })}>Try again</button>
+        </div>
+      </div>
+    );
+  }
+}
+
 export default function App() {
   const [info, setInfo] = useState(null);
   const [err, setErr] = useState(null);
@@ -21,10 +41,13 @@ export default function App() {
   const [refreshKey, setRefreshKey] = useState(0);
   const sendRef = useRef(() => {});
 
+  const recheck = () => api.info().then(setInfo).catch((e) => setErr(e.message));
   useEffect(() => {
-    api.info().then(setInfo).catch((e) => setErr(e.message));
+    recheck();
   }, []);
-  useEffect(() => localStorage.setItem("lc-tab", tab), [tab]);
+  useEffect(() => {
+    localStorage.setItem("lc-tab", tab);
+  }, [tab]);
 
   if (err) return <div className="boot error">Can't reach the local server: {err}</div>;
   if (!info) return <div className="boot muted">Starting…</div>;
@@ -46,15 +69,22 @@ export default function App() {
         </span>
       </header>
 
+      {!c.bin && (
+        <div className="banner">
+          Claude Code CLI not found. Install it (https://code.claude.com/docs/en/setup) or set <code>CLAUDE_BIN</code>, then
+          restart the server. The side panels work without it.
+        </div>
+      )}
       {c.bin && !c.loggedIn && (
         <div className="banner">
-          The Claude Code CLI isn't logged in, so the chat can't answer yet. Run <code>claude auth login</code> once in a
-          terminal and sign in with your Claude subscription, then reload. The side panels work without it.
+          <LoginNotice command={c.loginCommand} onRecheck={recheck} />
         </div>
       )}
 
       <main>
-        <Chat info={info} sendRef={sendRef} />
+        <Boundary name="Chat">
+          <Chat info={info} sendRef={sendRef} onRecheck={recheck} onAuthProblem={recheck} />
+        </Boundary>
         <aside>
           <nav>
             {TABS.map(([id, label]) => (
@@ -67,17 +97,19 @@ export default function App() {
               {wide ? "⇥" : "⇤"}
             </button>
           </nav>
-          {tab === "course" && <Course refreshKey={refreshKey} />}
-          {tab === "ctest" && (
-            <CTest
-              sendToCoach={(m) => {
-                sendRef.current(m);
-                setRefreshKey((k) => k + 1);
-              }}
-            />
-          )}
-          {tab === "listen" && <Listen />}
-          {tab === "progress" && <Dashboard refreshKey={refreshKey} />}
+          <Boundary name={tab} key={tab}>
+            {tab === "course" && <Course refreshKey={refreshKey} />}
+            {tab === "ctest" && (
+              <CTest
+                sendToCoach={(m) => {
+                  sendRef.current(m);
+                  setRefreshKey((k) => k + 1);
+                }}
+              />
+            )}
+            {tab === "listen" && <Listen />}
+            {tab === "progress" && <Dashboard refreshKey={refreshKey} />}
+          </Boundary>
         </aside>
       </main>
     </div>

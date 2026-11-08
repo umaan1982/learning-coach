@@ -86,13 +86,37 @@ export function claudeStatus() {
   try {
     version = execFileSync(bin, ["--version"], opts).trim();
   } catch { /* reported as null */ }
+  let out = "";
   try {
-    const s = JSON.parse(execFileSync(bin, ["auth", "status"], opts));
+    out = execFileSync(bin, ["auth", "status"], opts);
+  } catch (e) {
+    out = String(e.stdout || ""); // non-zero exit when logged out; the JSON is still on stdout
+  }
+  try {
+    const s = JSON.parse(out);
     loggedIn = !!s.loggedIn;
     authMethod = s.authMethod || null;
   } catch { /* older CLIs: unknown */ }
-  return { bin: CLAUDE_BIN, version, loggedIn, authMethod };
+  return { bin: CLAUDE_BIN, version, loggedIn, authMethod, loginCommand: loginCommand() };
 }
+
+/** The exact command the user runs once in their own terminal (browser sign-in, Claude subscription). */
+export function loginCommand() {
+  if (!CLAUDE_BIN) return null;
+  if (findOnPath() === CLAUDE_BIN) return "claude auth login";
+  return isWin ? `& "${CLAUDE_BIN}" auth login` : `"${CLAUDE_BIN}" auth login`;
+}
+
+// Checked before a chat turn until it succeeds once, so logging in works without restarting the server.
+let authOk = false;
+export function ensureLoggedIn() {
+  if (authOk) return { ok: true };
+  const s = claudeStatus();
+  authOk = s.loggedIn;
+  return { ok: s.loggedIn, status: s };
+}
+
+const NOT_LOGGED_IN = /not logged in|please run \/login|invalid api key|oauth token (has )?expired/i;
 
 // ---------------------------------------------------------------- one chat turn
 // Kept deliberately small: it says *where* the coach is running, not *how* to coach.
@@ -189,16 +213,17 @@ export function runTurn({ message, sessionId, model }, emit) {
           audioFrom(c || "");
         }
         break;
-      case "result":
+      case "result": {
         finished = true;
-        emit({
-          type: "done",
-          ok: !o.is_error,
-          error: o.is_error ? o.result || o.subtype || "error" : null,
-          sessionId: o.session_id,
-          durationMs: o.duration_ms,
-        });
+        const error = o.is_error ? o.result || o.subtype || "error" : null;
+        if (error && NOT_LOGGED_IN.test(error)) {
+          authOk = false;
+          emit({ type: "done", ok: false, code: "not_logged_in", error, loginCommand: loginCommand() });
+          break;
+        }
+        emit({ type: "done", ok: !o.is_error, error, sessionId: o.session_id, durationMs: o.duration_ms });
         break;
+      }
     }
   };
 
