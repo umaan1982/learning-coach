@@ -115,4 +115,10 @@ claude plugin eval . --allow-tools Write,Edit,Bash --scaffold
 v0.4.0: structured course (modules, units, lessons, unit checks, spiral review), visual progress dashboard and offline pronunciation scoring, on top of focus-mode messages, listening and speaking loops, and audio flashcards. Roadmap: phoneme-level pronunciation scoring, and a second domain to prove the engine is generic.
 
 ## License
-[MIT](LICENSE) © 2026 Usman Ahmed Saeed. The research summaries cite their original authors; the Goethe-Institut materials linked in `sources.md` belong to their owners and are not redistributed here.
+[PolyForm Noncommercial 1.0.0](LICENSE) © 2026 Usman Ahmed Saeed.
+
+- **Free for noncommercial use:** personal learning, study, hobby projects, research, and schools or other noncommercial organisations. You may copy, change and share it, as long as you keep the license and the `Required Notice` line.
+- **Commercial use needs a separate license:** selling it, bundling it into a paid product or service, or using it in a company. Contact the author via [GitHub](https://github.com/umaan1982).
+- **Earlier versions:** everything up to and including commit `2180866` (v0.3.0) was released under the MIT license, and copies of those versions keep MIT terms.
+
+The research summaries cite their original authors. The Goethe-Institut materials linked in `sources.md` belong to their owners and are not redistributed here.
