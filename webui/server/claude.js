@@ -5,7 +5,7 @@ import { execFileSync, spawn } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { DATA_ROOT, DOMAIN, SKILL_DIR } from "./config.js";
+import { DATA_ROOT, DOMAIN, DOMAIN_DIR, SKILL_DIR } from "./config.js";
 
 const isWin = process.platform === "win32";
 
@@ -125,11 +125,34 @@ const APPEND_SYSTEM_PROMPT =
   `The learner is talking to you through a local desktop web UI for the learning-coach skill. ` +
   `For every learner message, follow the learning-coach skill (domain: ${DOMAIN}); its process and message style apply unchanged. ` +
   `The UI has its own panels for the C-test, listening audio, course status and the progress dashboard, which run the skill's scripts directly. ` +
-  `There is no clickable-choice tool here, so offer numbered options instead.`;
+  `There is no clickable-choice tool here, so offer numbered options instead. ` +
+  `Audio made with speak.py appears as a player in the chat automatically. ` +
+  // Configuration, not coaching: where this session's files are. Without it the model
+  // falls back to the skill's default ~/learning-coach-data, even when the UI runs on sandbox data.
+  `Learner data for this session is in ${DOMAIN_DIR}; read and write learner files only there. ` +
+  `LEARNING_COACH_DATA is already set to ${DATA_ROOT} in the environment, so run the scripts without setting it. ` +
+  `The skill is at ${SKILL_DIR}; run its scripts as python "${path.join(SKILL_DIR, "scripts")}${path.sep}<name>.py" ...`;
 
-const ALLOWED_TOOLS = ["Skill", "Read", "Glob", "Grep", "Write", "Edit", "Bash(python *)", "Bash(python3 *)", "Bash(py *)"];
+const ALLOWED_TOOLS = [
+  "Skill", "Read", "Glob", "Grep", "Write", "Edit",
+  "Bash(python *)", "Bash(python3 *)", "Bash(py *)",
+  // read-only helpers the model likes to chain with the scripts
+  "Bash(cd *)", "Bash(ls *)", "Bash(cat *)", "Bash(head *)", "Bash(tail *)", "Bash(wc *)", "Bash(echo *)", "Bash(pwd)",
+  // On Windows the CLI also has a PowerShell tool
+  "PowerShell(python *)", "PowerShell(py *)", "PowerShell(Get-ChildItem *)", "PowerShell(Get-Content *)",
+];
 
-const MP3 = /(?:[A-Za-z]:[\\/]|\/)[^\s"'<>|*?`]*?\.mp3/gi;
+// Sandbox / temp data: hard-block the real data folder, whatever the model decides.
+const REAL_DATA = path.join(os.homedir(), "learning-coach-data");
+const DENIED_TOOLS =
+  path.resolve(DATA_ROOT).toLowerCase() === path.resolve(REAL_DATA).toLowerCase()
+    ? []
+    : ["Read(~/learning-coach-data/**)", "Edit(~/learning-coach-data/**)", "Write(~/learning-coach-data/**)"];
+
+// speak.py writes to <data>/<domain>/audio/<stamp>-<mode>.mp3. Match the file name only
+// (full paths contain spaces, e.g. C:\Users\Usman Saeed\...) and look it up in that folder.
+const MP3_NAME = /[\w.-]+\.mp3\b/gi;
+const AUDIO_DIR = path.join(DOMAIN_DIR, "audio");
 
 /**
  * Run one learner message through `claude -p`, resuming `sessionId` if given.
@@ -153,7 +176,7 @@ export function runTurn({ message, sessionId, model }, emit) {
     "--permission-prompts", "none",
     "--add-dir", SKILL_DIR,
     "--append-system-prompt", APPEND_SYSTEM_PROMPT,
-    "--disallowedTools", "AskUserQuestion",
+    "--disallowedTools", "AskUserQuestion", ...DENIED_TOOLS,
     "--allowedTools", ...ALLOWED_TOOLS,
   ];
   if (sessionId) args.push("--resume", sessionId);
@@ -168,12 +191,14 @@ export function runTurn({ message, sessionId, model }, emit) {
   let textBlocksThisMessage = 0;
   let finished = false;
   const seenAudio = new Set();
+  const speakCalls = new Set(); // tool_use ids of speak.py runs
 
   const audioFrom = (text) => {
-    for (const m of String(text).matchAll(MP3)) {
-      if (!seenAudio.has(m[0])) {
-        seenAudio.add(m[0]);
-        emit({ type: "audio", path: m[0] });
+    for (const m of String(text).matchAll(MP3_NAME)) {
+      const p = path.join(AUDIO_DIR, m[0]);
+      if (!seenAudio.has(p) && fs.existsSync(p)) {
+        seenAudio.add(p);
+        emit({ type: "audio", path: p });
       }
     }
   };
@@ -202,13 +227,14 @@ export function runTurn({ message, sessionId, model }, emit) {
             if (!deltasThisMessage) emit({ type: "text", text: b.text });
             audioFrom(b.text);
           } else if (b.type === "tool_use") {
+            if (/speak\.py/.test(b.input?.command || "")) speakCalls.add(b.id);
             emit({ type: "tool", name: b.name, detail: toolDetail(b) });
           }
         }
         break;
-      case "user": // tool results: speak.py prints the MP3 path
+      case "user": // tool results: speak.py prints the MP3 path (other tools, e.g. a folder listing, don't count)
         for (const b of o.message?.content || []) {
-          if (b.type !== "tool_result") continue;
+          if (b.type !== "tool_result" || !speakCalls.has(b.tool_use_id)) continue;
           const c = Array.isArray(b.content) ? b.content.map((x) => x.text || "").join("\n") : b.content;
           audioFrom(c || "");
         }

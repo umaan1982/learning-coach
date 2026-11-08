@@ -2,6 +2,7 @@
 //   npm run dev           -> real data (~/learning-coach-data or $LEARNING_COACH_DATA), Vite dev middleware
 //   npm run dev:sandbox   -> throwaway data folder in the OS temp dir
 //   npm run build && npm start -> serves the built front end
+import { spawn } from "node:child_process";
 import fs from "node:fs";
 import http from "node:http";
 import path from "node:path";
@@ -171,11 +172,7 @@ async function chat(req, res) {
 }
 
 // ---------------------------------------------------------------- server
-let vite = null;
-if (!PROD) {
-  const { createServer } = await import("vite");
-  vite = await createServer({ root: WEBUI_DIR, server: { middlewareMode: true }, appType: "spa" });
-}
+let vite = null; // created below, once we know this instance will run
 
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, `http://${req.headers.host}`);
@@ -211,10 +208,46 @@ async function prepareSandbox() {
   console.log(r.stdout || r.stderr);
 }
 
+const URL_ = `http://${HOST}:${PORT}`;
+
+// --open: show the page in the default browser (whatever the user picked, e.g. Firefox).
+function openBrowser() {
+  if (!process.argv.includes("--open")) return;
+  const [cmd, args] =
+    process.platform === "win32" ? ["cmd", ["/c", "start", "", URL_]] :
+    process.platform === "darwin" ? ["open", [URL_]] : ["xdg-open", [URL_]];
+  spawn(cmd, args, { detached: true, stdio: "ignore", windowsHide: true }).unref();
+}
+
+// Already running (e.g. started earlier)? Then just open it instead of starting a second copy.
+async function reuseRunning() {
+  const info = await fetch(`${URL_}/api/info`, { signal: AbortSignal.timeout(3000) }).then((r) => r.json()).catch(() => null);
+  if (!info?.domain) return false;
+  console.log(`learning-coach UI is already running at ${URL_} (data ${info.dataRoot}).`);
+  if (info.sandbox !== SANDBOX) console.log(`  Note: that one uses ${info.sandbox ? "SANDBOX" : "your real"} data. Close its window to switch.`);
+  openBrowser();
+  return true;
+}
+
+server.on("error", async (e) => {
+  if (e.code !== "EADDRINUSE") throw e;
+  if (await reuseRunning()) process.exit(0);
+  console.error(`Port ${PORT} is used by another program. Set PORT to another number and try again.`);
+  process.exit(1);
+});
+
+if (await reuseRunning()) process.exit(0);
+if (!PROD) {
+  const { createServer } = await import("vite");
+  // Live reload shares our port instead of opening a second one.
+  vite = await createServer({ root: WEBUI_DIR, server: { middlewareMode: true, hmr: { server } }, appType: "spa" });
+}
 await prepareSandbox();
 server.listen(PORT, HOST, () => {
-  console.log(`learning-coach UI  ->  http://${HOST}:${PORT}`);
-  console.log(`  domain ${DOMAIN}  ·  data ${DATA_ROOT}${SANDBOX ? "  (SANDBOX)" : ""}`);
+  console.log(`learning-coach UI  ->  ${URL_}`);
+  console.log(`  domain ${DOMAIN}  ·  data ${DATA_ROOT}${SANDBOX ? "  (SANDBOX: throwaway practice data)" : ""}`);
   console.log(`  skill  ${SKILL_DIR}`);
   console.log(`  claude ${CLAUDE_BIN || "NOT FOUND (set CLAUDE_BIN)"}`);
+  console.log("  Close this window (or press Ctrl+C) to stop.");
+  openBrowser();
 });

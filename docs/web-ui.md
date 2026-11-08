@@ -10,7 +10,18 @@ webui/
   src/               React (Vite): chat pane + side panel (Course, C-test, Listen, Progress)
 ```
 
-Start: `cd webui && npm install && npm run dev` (real data), or `npm run dev:sandbox` (throwaway data folder in the OS temp dir). Open http://127.0.0.1:5178.
+## Start
+
+Double-click `start-ui.cmd` in the repo root, or run it from a terminal:
+
+| Command | Data |
+|---|---|
+| `start-ui.cmd` | your real data, `~/learning-coach-data` (daily use) |
+| `start-ui.cmd sandbox` | a throwaway practice folder in the temp dir, for trying things out; your real data is blocked |
+
+It installs the packages on first run, starts the server and opens http://127.0.0.1:5178 in your default browser (any browser works). If the UI is already running, it just opens the page. Close the console window to stop. It runs through `cmd.exe`, so PowerShell's script execution policy doesn't matter.
+
+Developer equivalents: `cd webui`, then `npm run dev` / `npm run dev:sandbox` (or `npm.cmd …` in PowerShell).
 
 ## How the backend calls the CLI
 
@@ -20,18 +31,22 @@ One chat turn = one process:
 claude -p --output-format stream-json --verbose --include-partial-messages
        --permission-mode acceptEdits --permission-prompts none
        --add-dir <skill dir> --append-system-prompt "<where the coach is running>"
-       --disallowedTools AskUserQuestion
-       --allowedTools Skill Read Glob Grep Write Edit "Bash(python *)" ...
+       --disallowedTools AskUserQuestion [sandbox: "Read(~/learning-coach-data/**)" Edit(…) Write(…)]
+       --allowedTools Skill Read Glob Grep Write Edit "Bash(python *)" "PowerShell(python *)" + read-only ls/cat/cd…
        [--resume <session_id>]
 ```
+
+There is no one to answer permission prompts in headless mode, so anything not allowed is denied automatically. That is why the allow list covers the scripts (`python …`, through Bash and the Windows PowerShell tool) and a few read-only commands.
 
 - The learner's message goes in on **stdin**, never on the command line.
 - The `session_id` from the `system/init` event is kept per data folder and passed back with `--resume`, so a lesson keeps its context. "New session" drops it.
 - cwd is the learner data folder; `LEARNING_COACH_DATA` is passed through, so the CLI and the panels see the same data.
+- The appended prompt names that folder explicitly. Without it the model fell back to the skill's default `~/learning-coach-data`, even on sandbox data. In sandbox mode the deny rules above also block the real folder at the tool level (tested: Read and Glob are refused).
+- The data folder is expanded to its long path (Windows reports `%TEMP%` as `C:\Users\USMANS~1\…`; Claude Code asks for approval on 8.3 short paths, so edits there were denied).
 - **Subscription only:** `ANTHROPIC_API_KEY`, `ANTHROPIC_AUTH_TOKEN`, `ANTHROPIC_BASE_URL` and leftover `CLAUDE_CODE_*` variables are removed from the child environment. The CLI must be logged in with `claude auth login` (or `CLAUDE_CODE_OAUTH_TOKEN` from `claude setup-token`).
 - CLI lookup: `CLAUDE_BIN`, then `PATH`, then `~/.local/bin`, then the copy the Claude desktop app keeps under `%APPDATA%\Claude\claude-code\<version>\`.
-- stream-json events are normalised to NDJSON for the browser: text deltas, tool-use lines, MP3 paths from tool output (shown as audio players), and a final `done`.
-- The appended system prompt only says where the coach is running and that there are no clickable-choice buttons. SKILL.md stays the single source of truth for the coaching process.
+- stream-json events are normalised to NDJSON for the browser: text deltas, tool-use lines, audio, and a final `done`. Audio: MP3 file names in `speak.py` output or the coach's text that exist in `<data>/<domain>/audio/` become players in the chat.
+- The appended system prompt only covers the setting: the web UI, no clickable-choice buttons, audio shows inline, where the data and scripts are. SKILL.md stays the single source of truth for the coaching process. Claude Code records this prompt when a session starts, so changes apply to new sessions only.
 
 ## Structured components vs chat
 
@@ -59,6 +74,9 @@ That path changes when the desktop app updates the CLI; a standalone install (ht
 
 ## Status (prototype)
 
-Tested on a sandbox data folder: C-test end to end (make → 4 texts → result, stop-early rule, overwrite and blank-gap warnings, "Hand back to the coach"), audio, dashboard, course status, 127.0.0.1-only binding and Host/Origin checks. The CLI accepts the full flag set (it emits `system/init`), and its stream is parsed into the chat.
+Tested on a sandbox data folder:
+- C-test end to end (make → 4 texts → result, stop-early rule, overwrite and blank-gap warnings, "Hand back to the coach"), Listen panel, dashboard, course status, 127.0.0.1-only binding and Host/Origin checks.
+- Real chat through the local CLI on the subscription login: the skill loads, replies stream in (~6–25 s per turn), a placement continues across turns with `--resume`, the coach reads/writes only the sandbox files and runs `ctest.py`/`speak.py`, and its audio plays as a player in the chat.
+- `start-ui.cmd sandbox`: starts, opens the browser, and a second start reuses the running server.
 
-Open: a full chat answer from the coach is not verified yet, because the CLI on this machine isn't logged in.
+Not tested: `start-ui.cmd` on a machine without `node_modules` (first-run install), and daily use on real data.

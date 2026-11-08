@@ -28,9 +28,17 @@ export const SCRIPTS_DIR = path.join(SKILL_DIR, "scripts");
 if (SANDBOX && !process.env.LEARNING_COACH_DATA) {
   process.env.LEARNING_COACH_DATA = path.join(os.tmpdir(), "learning-coach-ui-sandbox");
 }
-export const DATA_ROOT = process.env.LEARNING_COACH_DATA
-  ? path.resolve(process.env.LEARNING_COACH_DATA.replace(/^~(?=$|[\\/])/, os.homedir()))
-  : path.join(os.homedir(), "learning-coach-data");
+function longPath(p) {
+  // Windows often reports TEMP as a short 8.3 path (C:\Users\USMANS~1\...). Claude Code asks for
+  // approval on such paths, which nobody can give in headless mode, so expand to the real long path.
+  fs.mkdirSync(p, { recursive: true });
+  return fs.realpathSync.native(p);
+}
+export const DATA_ROOT = longPath(
+  process.env.LEARNING_COACH_DATA
+    ? path.resolve(process.env.LEARNING_COACH_DATA.replace(/^~(?=$|[\\/])/, os.homedir()))
+    : path.join(os.homedir(), "learning-coach-data"),
+);
 export const DOMAIN_DIR = path.join(DATA_ROOT, DOMAIN);
 
 /** True if `p` resolves to a path inside `root` (no `..` escapes). */
