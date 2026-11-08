@@ -1,0 +1,10 @@
+schema_version: "1.1"
+name: course-next-lesson
+expected_outcome: |
+  The learner is in unit U05 (Arbeit und Beruf), day 3 (Wednesday morning). The coach checks the course
+  state (course.py status or course-progress.csv), continues with that unit's Wednesday-morning lesson from
+  the German course.md pattern (grammar point 2 or deeper reps of U05's grammar: adjective endings /
+  deshalb-trotzdem, plus a vocabulary block on work), opens with a recall item that can come from an
+  earlier unit (spiral, e.g. the weak weil-clauses from U04), and keeps the first message short (focus mode).
+context:
+  scaffold_script: place-files.sh

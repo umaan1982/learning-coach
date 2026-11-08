@@ -107,6 +107,22 @@ def collect(domain, today):
     clar7 = clarity(today - dt.timedelta(days=7), today)
     clar7_prev = clarity(today - dt.timedelta(days=14), today - dt.timedelta(days=7))
 
+    course = None
+    try:
+        import course as C
+        units = C.load_units(domain)
+        prog = C.load_progress(domain)
+        start, dl = C.dates(domain, today)
+        plan, _ = C.build_schedule(units, start, dl)
+        cur = C.first_open(units, prog)
+        planned_idx = max((i for i, (u, dd) in enumerate(plan) if dd <= today), default=0)
+        lag = sum(C.weight(units[i]) for i in range(units.index(cur), planned_idx)) if cur else 0
+        course = {"units": [(u["unit"], u["module"], u["title"], prog.get(u["unit"], {}).get("status", "")) for u in units],
+                  "current": cur and (cur["unit"], cur["title"]), "lag": lag,
+                  "done": sum(1 for u in units if prog.get(u["unit"], {}).get("status") in C.DONE)}
+    except SystemExit:
+        pass  # domain without a course map
+
     deadline = to_date(profile.get("deadline", ""))
     total_min = sum(iv(r, "minutes") for r in sessions)
     return {
@@ -117,7 +133,7 @@ def collect(domain, today):
         "acc7": acc(w0), "acc7_prev": acc(w1), "hours": total_min / 60,
         "per_day": per_day, "weeks": weeks, "patterns": patterns,
         "strands": [(s, strand_min.get(s, 0.0)) for s, _ in STRANDS],
-        "has_data": bool(sessions), "clar7": clar7, "clar7_prev": clar7_prev,
+        "has_data": bool(sessions), "course": course, "clar7": clar7, "clar7_prev": clar7_prev,
     }
 
 
@@ -224,6 +240,27 @@ def chart_strands(strands):
     return "".join(out) + f'<div class="legend">{legend}<span class="note">aim ≈ 25% each over a week</span></div>{nudge}'
 
 
+def chart_course(c):
+    units = c["units"]
+    W, H, gap = 420, 16, 2
+    bw = (W - gap * (len(units) - 1)) / len(units)
+    out = [f'<svg viewBox="0 0 {W} {H + 18}" role="img" aria-label="Course map: {c["done"]} of {len(units)} units done">']
+    prev_mod = None
+    for i, (uid, mod, title, st) in enumerate(units):
+        x = i * (bw + gap)
+        cls = "u-done" if st in ("passed", "corrected", "tested-out") else ("u-cur" if c["current"] and uid == c["current"][0] else "u-todo")
+        label = f"{uid} {title}: " + {"u-done": st, "u-cur": "current", "u-todo": "to do"}[cls]
+        out.append(f'<rect class="{cls}" x="{x:.1f}" y="0" width="{bw:.1f}" height="{H}" rx="3"{tip(label)}/>')
+        if mod != prev_mod:
+            out.append(f'<text class="tick" x="{x:.1f}" y="{H + 14}">{E(mod)}</text>')
+            prev_mod = mod
+    out.append("</svg>")
+    cur = c["current"]
+    pace = "on track" if c["lag"] < 1 else (f"~{c['lag']:.0f} week behind" if c["lag"] < 2 else f"~{c['lag']:.0f} weeks behind: time to compress")
+    now = f'Now: <b>{E(cur[0])} {E(cur[1])}</b> · {pace}' if cur else "All units done: exam time"
+    return "".join(out) + f'<p class="cap" style="margin-top:8px">{now}</p>'
+
+
 def tables(m):
     rows = lambda pairs: "".join(f"<tr><td>{E(str(a))}</td><td>{E(str(b))}</td></tr>" for a, b in pairs)
     pd = [(f"{d:%Y-%m-%d}", v) for d, v in m["per_day"]]
@@ -273,7 +310,7 @@ svg{width:100%;height:auto;display:block;overflow:visible}
 .legend{display:flex;flex-wrap:wrap;gap:12px;margin-top:8px;font-size:12px;color:var(--text-secondary);align-items:center}
 .key{display:inline-flex;align-items:center;gap:6px}.sw{width:10px;height:10px;border-radius:3px;display:inline-block}
 .sw.s1{background:var(--series-1)}.sw.s2{background:var(--series-2)}.sw.s3{background:var(--series-3)}.sw.s4{background:var(--series-4)}
-.note{color:var(--muted)}.nudge{font-size:13px;color:var(--text-primary);margin:8px 0 0}.empty{color:var(--text-secondary);font-size:14px;margin:6px 0}
+.u-done{fill:var(--series-1)}.u-cur{fill:var(--band);stroke:var(--series-1);stroke-width:2}.u-todo{fill:var(--grid)}.note{color:var(--muted)}.nudge{font-size:13px;color:var(--text-primary);margin:8px 0 0}.empty{color:var(--text-secondary);font-size:14px;margin:6px 0}
 #tip{position:fixed;pointer-events:none;background:var(--surface-1);color:var(--text-primary);border:1px solid var(--ring);
 border-radius:8px;padding:6px 9px;font-size:12px;box-shadow:0 4px 14px rgba(0,0,0,.12);display:none;z-index:9;max-width:240px}
 details{margin-top:6px;font-size:13px;color:var(--text-secondary)}summary{cursor:pointer}
@@ -328,6 +365,9 @@ def render(m, today):
     if not m["has_data"]:
         body += '<div class="card"><p class="empty">No sessions logged yet. Your charts appear after the first session.</p></div>'
     else:
+        if m["course"]:
+            c = m["course"]
+            body += f'<div class="card"><h2>Course</h2><p class="cap">{c["done"]} of {len(c["units"])} units done · each block is one unit (MT = module test)</p>{chart_course(c)}</div>'
         body += (f'<div class="card"><h2>Minutes per day</h2><p class="cap">Last 30 days</p>{chart_minutes(m["per_day"])}</div>'
                  f'<div class="card"><h2>Recall accuracy</h2><p class="cap">First-try, per week. {acc_cap}</p>{chart_accuracy(m["weeks"])}</div>'
                  f'<div class="card"><h2>Open mistake patterns</h2><p class="cap">Last 30 days, most frequent first. These drive your practice.</p>{chart_patterns(m["patterns"])}</div>'

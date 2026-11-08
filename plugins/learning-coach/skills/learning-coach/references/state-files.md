@@ -55,6 +55,9 @@ date,skill,pattern,wrong,correct,source,resolved
 - `mock-YYYY-MM-DD.md`: section, raw score, scaled score, criteria notes, comparison with previous mocks.
 - `voice-YYYY-MM-DD.md`: raw pasted voice-chat reports.
 
+## course-progress.csv
+Written by `course.py`: `unit,status,started,checked,score,attempts,notes`. Status is `current`, `passed`, `corrected` (passed with gaps carried forward) or `tested-out`.
+
 ## pronunciation.csv
 Written by `pronounce.py --log`: `date,target,heard,intelligibility,wpm,pauses,flagged` (flagged = `word>heard-as;…`). Feeds the dashboard's clarity tile.
 

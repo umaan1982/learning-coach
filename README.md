@@ -12,6 +12,17 @@ A Claude skill that runs a **learning process taken from learning-science resear
 
 The process is generic. Subjects plug in as **domain packs**. The first domain is **German B1 (Goethe-Zertifikat)**.
 
+**It runs as a structured course, like a language institute:**
+```
+Course  (A2 → Goethe B1, Nov → June)
+ └─ Module  (4–6 weeks)          → ends with a module test (official exam format)
+     └─ Unit  (1 week, 1 real-life theme: Wohnen, Arbeit, Gesundheit …)
+         │                        → can-do goals + the grammar/vocab that theme needs
+         │                        → ends with a unit check (≥80% → next unit; otherwise correctives)
+         └─ Lesson  (one 35-min train ride)
+```
+Units build on each other, and earlier units keep coming back in recall and in every check (spiral review). The German course has 5 modules and 24 units, ordered by the *fields of action* of Germany's integration-course curriculum and aligned to the Goethe B1 exam. `course.py` tracks where you are and warns when you fall behind the plan.
+
 > Why: AI can help or harm learning. In a field experiment, students with unrestricted GPT-4 scored 17% worse once it was taken away, while a guard-railed tutor avoided the harm (Bastani et al., *PNAS* 2025). A well-designed AI tutor beat in-class active learning at Harvard (Kestin et al., *Sci. Reports* 2025). This skill encodes the guard rails and the techniques with the strongest evidence. See [`docs/research-brief.md`](docs/research-brief.md).
 
 ## What it does
@@ -25,7 +36,9 @@ The process is generic. Subjects plug in as **domain packs**. The first domain i
 | "how am I doing?" | Progress report plus a visual dashboard (HTML, works offline, light/dark): days left, streak, minutes per day, recall accuracy vs the 80–90% target, open mistake patterns, strand mix, speech clarity |
 | "Evening train, let's do listening" | Generated German audio (two-voice exam-style dialogues, slow-then-normal) with one question at a time |
 | *sends a voice recording* | Pronunciation check: clarity %, words heard wrongly, speech rate and pauses |
-| weekly / monthly | Mixed review, fluency drill, timed mock in the official exam format |
+| "where am I in the course?" | Current unit and lesson day, the plan to the exam, on track or behind |
+| Friday morning | Unit check: mastery gate, cumulative over earlier units |
+| weekly / end of module | Mixed review, fluency drill, module test in the official exam format |
 | "can I use this for statistics?" | Builds a new domain pack following the spec |
 
 ## Repository layout
@@ -99,7 +112,7 @@ claude plugin eval . --allow-tools Write,Edit,Bash --scaffold
 ```
 
 ## Status
-v0.3.0: visual progress dashboard and offline pronunciation scoring, on top of focus-mode messages, listening and speaking loops, and audio flashcards. Roadmap: phoneme-level pronunciation scoring, and a second domain to prove the engine is generic.
+v0.4.0: structured course (modules, units, lessons, unit checks, spiral review), visual progress dashboard and offline pronunciation scoring, on top of focus-mode messages, listening and speaking loops, and audio flashcards. Roadmap: phoneme-level pronunciation scoring, and a second domain to prove the engine is generic.
 
 ## License
 [MIT](LICENSE) © 2026 Usman Ahmed Saeed. The research summaries cite their original authors; the Goethe-Institut materials linked in `sources.md` belong to their owners and are not redistributed here.

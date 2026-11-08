@@ -22,10 +22,11 @@ Why this matters: the hardest part of self-study isn't content (there's plenty o
 | Block-by-block session details with good and bad examples | `references/session-protocol.md` |
 | How every message looks (focus mode, templates, clickable choices) | `references/message-style.md` |
 | Listening (generated German audio) and speaking (mic and dictation) loops | `references/audio-practice.md` |
+| **The structured course:** course → module → unit → lesson, unit checks, spiral review, pacing | `references/curriculum.md` |
 | Learner data file formats | `references/state-files.md` |
 | How to build a new domain | `references/domain-pack-spec.md` |
 | Domain packs | `domains/<domain-id>/` (start with `domain.md`) |
-| Helper scripts | `scripts/`: `init_learner.py`, `anki_connect.py`, `progress.py`, `dashboard.py` (visual progress page), `speak.py` (German audio), `pronounce.py` (scores a voice recording) |
+| Helper scripts | `scripts/`: `init_learner.py`, `anki_connect.py`, `progress.py`, `course.py` (where you are in the course, schedule, unit-check gate), `dashboard.py` (visual progress page), `speak.py` (German audio), `pronounce.py` (scores a voice recording) |
 | Optional Python packages | `requirements.txt` (edge-tts for audio, faster-whisper for pronunciation). Everything else is standard library. |
 
 **Learner data** lives outside the skill so the skill can be shared publicly without personal data. It sits in `~/learning-coach-data/<domain-id>/`, or in `$LEARNING_COACH_DATA/<domain-id>/` if that variable is set:
@@ -48,7 +49,9 @@ Look at the learner's message and their data folder, then pick one mode:
 |-----------|------|
 | No data folder or no `profile.md` for this domain | **Onboarding** (§4) |
 | Profile exists but no finished `notes/placement-YYYY-MM-DD.md` (an in-progress file doesn't count) | **Placement** (§5) |
-| "session", "lernen", "quiz me", "I have N minutes", or no specific ask | **Daily session** (§6) |
+| "session", "lernen", "quiz me", "I have N minutes", or no specific ask | **Daily session** (§6): the next lesson of the current unit |
+| "unit check", "test me on this unit", or the lesson pattern says it's check day | **Unit check** (`references/curriculum.md` §5) |
+| "where am I in the course", "what's the plan" | `course.py status` / `schedule` |
 | Learner pastes a voice-chat mistake list or asks to log errors | **Import** (§8) |
 | "progress", "how am I doing", "am I on track" | **Progress report** (§9) |
 | Weekly review due (7+ days since last) or asked | **Weekly review** (§10) |
@@ -111,10 +114,14 @@ Mastery learning only works if you know where the learner actually is. Self-repo
 - **No teaching during placement.** Give brief, neutral acknowledgements ("Thanks, next one"). Feedback here would contaminate the measurement. Explain this up front so it doesn't feel cold.
 - **Production over recognition.** Ask the learner to produce answers rather than pick them, so you see what they can actually use.
 - **Output:** write `notes/placement-YYYY-MM-DD.md` with a level estimate per skill, the top gaps (as error-pattern tags), a vocabulary estimate if the domain has one, and the **plan**: a weekly slot allocation and phase plan to the deadline (the domain's `domain.md` has templates). Update `level_estimate` in `profile.md`.
+- **Set the course entry point:** use the domain's entry rules (`course.md`) to pick the starting unit. Mark earlier units with `course.py testout`, start the first one with `course.py start`, and show the learner the plan with `course.py schedule`.
 - **Tell the learner the result in focus mode:** level, top 3 gaps and the daily plan in a few lines. Link to the notes file for the rest.
 - **Be honest about feasibility.** Compare the remaining distance (domain's hour estimates) with available minutes × days to the deadline. If it's tight, say so and propose options: more minutes, a narrower goal, a later date, or prioritising the modules that matter.
 
 ## 6. Daily session
+
+### 6.0 Every session is a lesson in a course
+Learning runs as a **structured course**, like a school or language institute: course → modules (4–6 weeks, ending in a module test) → units (one week, one real-life theme, 2–3 can-do goals, the grammar and vocabulary that theme needs, ending in a unit check) → lessons (one slot each). Each unit builds on the ones before. Start every session with `python scripts/course.py status --domain <id>`. It says which unit you're in, which lesson day it is, and whether you're on track. Then take that day's lesson from the domain's `course.md` lesson pattern. The error log and spiral review (earlier units) still feed the recall block. Full rules: `references/curriculum.md`.
 
 ### 6.1 Shape
 
@@ -181,11 +188,11 @@ Lead with one concrete next step. Don't inflate progress, and don't moralise abo
 - One fluency task (same material, faster: e.g. retell a story in 4, then 3, then 2 minutes, or speed-read an easy text).
 - Refresh the "top 5 patterns" list in `profile.md`.
 
-**Monthly:** one timed mock section in the target format (the domain's `exam-format.md`), scored with the official criteria where available. Save it in `notes/mock-YYYY-MM-DD.md`, compare with earlier mocks, and adjust the slot allocation toward the weakest section. Practising in the target format matters because test-enhanced learning transfers best when practice overlaps the final test.
+**End of each module (about monthly):** the module test from the course map (`references/curriculum.md` §5): one timed section in the target format (the domain's `exam-format.md`), scored with the official criteria where available. Save it in `notes/mock-YYYY-MM-DD.md`, compare with earlier mocks, and adjust the slot allocation toward the weakest section. Practising in the target format matters because test-enhanced learning transfers best when practice overlaps the final test.
 
 ## 11. New domain
 
-When the learner wants to use the coach for a new subject, follow `references/domain-pack-spec.md`. It defines the required files: `domain.md`, `placement.md`, a syllabus, an error taxonomy, an assessment format and sources. Build the pack from evidence: look up how experts in that field assess and train the skill, rather than inventing a curriculum. The engine (this file) stays unchanged. If you catch yourself editing SKILL.md for one subject, the change belongs in the domain pack instead.
+When the learner wants to use the coach for a new subject, follow `references/domain-pack-spec.md`. It defines the required files: `domain.md`, `placement.md`, a syllabus, **a course map (`course.csv` + `course.md`: modules, units and the weekly lesson pattern)**, an error taxonomy, an assessment format and sources. Build the pack from evidence: look up how experts in that field assess and train the skill, rather than inventing a curriculum. The engine (this file) stays unchanged. If you catch yourself editing SKILL.md for one subject, the change belongs in the domain pack instead.
 
 ---
 

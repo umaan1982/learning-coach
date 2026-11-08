@@ -3,9 +3,10 @@
 The first domain pack. It tells the generic engine what each session block contains for German at A2→B1, how to assess progress, and what typical mistakes look like.
 
 Files in this pack:
+- `course.md` + `course.csv`: **the structured course**, 5 modules and 24 units (A2 refresh → B1 → exam training), weekly lesson pattern, entry rules
 - `placement.md`: diagnostic test (run once at the start, repeat any section later to re-check)
 - `grammar-syllabus.md`: A1 refresher → B1 grammar in teaching order, with confusable pairs
-- `exam-format.md`: Goethe-Zertifikat B1 modules, task types, scoring and criteria (used for monthly mocks)
+- `exam-format.md`: Goethe-Zertifikat B1 modules, task types, scoring and criteria (used for module tests and mocks)
 - `sources.md`: official word list and practice sets, plus graded reading and listening materials
 
 ## 1. Goal and level descriptors

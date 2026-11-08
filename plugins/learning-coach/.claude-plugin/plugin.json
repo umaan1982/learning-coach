@@ -1,6 +1,6 @@
 {
   "name": "learning-coach",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Evidence-based personal learning coach: placement, daily sessions, spaced repetition (Anki), tutor-style feedback, progress tracking. Ships with a German B1 domain.",
   "author": {
     "name": "Usman Ahmed Saeed"

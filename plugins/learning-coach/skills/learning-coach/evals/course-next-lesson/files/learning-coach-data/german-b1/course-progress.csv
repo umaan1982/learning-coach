@@ -1,0 +1,7 @@
+unit,status,started,checked,score,attempts,notes
+U01,tested-out,,2026-11-09,0.90,1,tested out
+U02,passed,2026-11-09,2026-11-13,0.86,1,
+U03,passed,2026-11-16,2026-11-20,0.82,1,
+U04,corrected,2026-11-16,2026-11-20,0.70,1,weil-clauses weak
+MT1,passed,2026-11-20,2026-11-20,0.81,1,
+U05,current,2026-11-23,,,0,
