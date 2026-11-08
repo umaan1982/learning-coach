@@ -1,6 +1,6 @@
 ---
 name: learning-coach
-description: Research-based personal learning coach. Runs placement tests, daily study sessions, spaced repetition (Anki), speaking/writing practice with tutor-style feedback, error tracking, weekly reviews, mock exams and progress reports toward a dated goal. Ships with a German B1 (Goethe-Zertifikat) domain and can scaffold new subjects. Use this skill whenever the user wants to study, practise, learn, revise, be quizzed, do their daily/commute session, run a placement or mock test, log mistakes from a voice chat, check learning progress, or plan learning for any subject, even if they only say "lernen", "let's study", "quiz me", "train session" or "I have 20 minutes".
+description: Research-based personal learning coach. Runs placement tests, daily study sessions, spaced repetition (Anki), speaking/writing practice with tutor-style feedback, error tracking, weekly reviews, mock exams and progress reports toward a dated goal. Works for any subject through domain packs (a German B1 pack is included) and can scaffold new ones. Use this skill whenever the user wants to study, practise, learn, revise, be quizzed, do their daily/commute session, run a placement or mock test, log mistakes from a voice chat, check learning progress, or plan learning for any subject, even if they only say "lernen", "let's study", "quiz me", "train session" or "I have 20 minutes".
 ---
 
 # Learning Coach

@@ -8,7 +8,7 @@
     {
       "name": "learning-coach",
       "source": "./plugins/learning-coach",
-      "description": "Evidence-based personal learning coach: placement, daily sessions, spaced repetition (Anki), tutor-style feedback, progress tracking. Ships with a German B1 domain."
+      "description": "Evidence-based personal learning coach: placement, daily sessions, spaced repetition (Anki), tutor-style feedback, progress tracking. Any subject plugs in as a domain pack."
     }
   ]
 }
