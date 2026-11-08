@@ -150,7 +150,7 @@ const DENIED_TOOLS =
     : ["Read(~/learning-coach-data/**)", "Edit(~/learning-coach-data/**)", "Write(~/learning-coach-data/**)"];
 
 // speak.py writes to <data>/<domain>/audio/<stamp>-<mode>.mp3. Match the file name only
-// (full paths contain spaces, e.g. C:\Users\Usman Saeed\...) and look it up in that folder.
+// (full paths contain spaces, e.g. C:\Users\John Doe\...) and look it up in that folder.
 const MP3_NAME = /[\w.-]+\.mp3\b/gi;
 const AUDIO_DIR = path.join(DOMAIN_DIR, "audio");
 

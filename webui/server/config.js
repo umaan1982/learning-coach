@@ -29,7 +29,7 @@ if (SANDBOX && !process.env.LEARNING_COACH_DATA) {
   process.env.LEARNING_COACH_DATA = path.join(os.tmpdir(), "learning-coach-ui-sandbox");
 }
 function longPath(p) {
-  // Windows often reports TEMP as a short 8.3 path (C:\Users\USMANS~1\...). Claude Code asks for
+  // Windows often reports TEMP as a short 8.3 path (C:\Users\JOHNDO~1\...). Claude Code asks for
   // approval on such paths, which nobody can give in headless mode, so expand to the real long path.
   fs.mkdirSync(p, { recursive: true });
   return fs.realpathSync.native(p);

@@ -42,7 +42,7 @@ There is no one to answer permission prompts in headless mode, so anything not a
 - The `session_id` from the `system/init` event is kept per data folder and passed back with `--resume`, so a lesson keeps its context. "New session" drops it.
 - cwd is the learner data folder; `LEARNING_COACH_DATA` is passed through, so the CLI and the panels see the same data.
 - The appended prompt names that folder explicitly. Without it the model fell back to the skill's default `~/learning-coach-data`, even on sandbox data. In sandbox mode the deny rules above also block the real folder at the tool level (tested: Read and Glob are refused).
-- The data folder is expanded to its long path (Windows reports `%TEMP%` as `C:\Users\USMANS~1\…`; Claude Code asks for approval on 8.3 short paths, so edits there were denied).
+- The data folder is expanded to its long path (Windows reports `%TEMP%` as `C:\Users\JOHNDO~1\…`; Claude Code asks for approval on 8.3 short paths, so edits there were denied).
 - **Subscription only:** `ANTHROPIC_API_KEY`, `ANTHROPIC_AUTH_TOKEN`, `ANTHROPIC_BASE_URL` and leftover `CLAUDE_CODE_*` variables are removed from the child environment. The CLI must be logged in with `claude auth login` (or `CLAUDE_CODE_OAUTH_TOKEN` from `claude setup-token`).
 - CLI lookup: `CLAUDE_BIN`, then `PATH`, then `~/.local/bin`, then the copy the Claude desktop app keeps under `%APPDATA%\Claude\claude-code\<version>\`.
 - stream-json events are normalised to NDJSON for the browser: text deltas, tool-use lines, audio, and a final `done`. Audio: MP3 file names in `speak.py` output or the coach's text that exist in `<data>/<domain>/audio/` become players in the chat.

@@ -47,6 +47,9 @@ Units build on each other, and earlier units keep coming back in recall and in e
 learning-coach/                         ← Claude Code plugin marketplace
 ├── .claude-plugin/marketplace.json
 ├── docs/research-brief.md              ← the research the process is built on
+├── docs/web-ui.md                      ← how the optional desktop web UI works
+├── start-ui.cmd                        ← one-click start for the web UI (Windows)
+├── webui/                              ← the web UI: small local server + React page
 └── plugins/learning-coach/
     ├── .claude-plugin/plugin.json
     └── skills/learning-coach/
@@ -72,6 +75,12 @@ Then just talk to it ("let's study", "set me up for my exam"), or call it with `
 **Claude Code (plain skill):** copy `plugins/learning-coach/skills/learning-coach/` into `~/.claude/skills/`.
 
 **Use from your phone:** start the session on your computer and turn on Remote Control. Then open the Claude app → **Code** and continue there. Your computer has to stay on.
+
+**Desktop web UI (optional, prototype):** a local page with the coach's chat on the left and tools on the right: a C-test with one input box per gap, an audio maker, course status and the progress dashboard. It drives your locally installed Claude Code CLI, so it runs on your Claude subscription. There's no API key and no hosting, and it's only reachable from your own computer (127.0.0.1). The coaching itself is unchanged: the chat runs this same skill.
+- Needs [Node.js](https://nodejs.org) 20+ and the Claude Code CLI, signed in once with `claude auth login`.
+- Windows: double-click **`start-ui.cmd`**, or run `start-ui.cmd sandbox` to try it on throwaway practice data (your real data is blocked in that mode). It installs what it needs on first run and opens the page in your default browser.
+- macOS/Linux: `cd webui && npm install && npm run dev` (or `npm run dev:sandbox`), then open http://127.0.0.1:5178.
+- How it works and what's tested: [`docs/web-ui.md`](docs/web-ui.md).
 
 **Listening and speaking:** `pip install edge-tts` (internet needed). The coach then generates audio in the domain's language (single sentences, slow-then-normal, or two-voice exam-style conversations) and sends the MP3 to your phone. For speaking, answer through the Claude app's mic (dictation). The coach compares the transcript with the target sentence. With `--audio`, flashcards get sound too. See [`references/audio-practice.md`](plugins/learning-coach/skills/learning-coach/references/audio-practice.md).
 
@@ -119,7 +128,7 @@ claude plugin eval . --allow-tools Write,Edit,Bash --scaffold
 ```
 
 ## Status
-v0.5.0: placement upgrade (self-rating, C-test router, sub-levels, external benchmark, typed-answer rule), structured course (modules, units, lessons, unit checks, spiral review), visual progress dashboard and offline pronunciation scoring, on top of focus-mode messages, listening and speaking loops, and audio flashcards. Roadmap: phoneme-level pronunciation scoring, and a second domain to prove the engine is generic.
+v0.5.0: placement upgrade (self-rating, C-test router, sub-levels, external benchmark, typed-answer rule), structured course (modules, units, lessons, unit checks, spiral review), visual progress dashboard and offline pronunciation scoring, on top of focus-mode messages, listening and speaking loops, and audio flashcards. New: an optional local desktop web UI (prototype). Roadmap: phoneme-level pronunciation scoring, and a second domain to prove the engine is generic.
 
 ## License
 [PolyForm Noncommercial 1.0.0](LICENSE) © 2026 Usman Ahmed Saeed.
