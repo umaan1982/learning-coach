@@ -9,6 +9,7 @@ webui/
   server/scripts.js  runs the skill's Python scripts (no AI)
   server/course.js   turns `course.py status` text into fields (raw text kept as fallback)
   server/plan.js     the Plan tab's data: profile, placement state, `course.py status` + `schedule`, module names
+  server/transcribe.py  offline dictation for the mic button (faster-whisper, same model as pronounce.py)
   src/components/    our components: Chat, Plan, CTest, Listen, Dashboard, LoginNotice
   src/components/ui/ shadcn/ui primitives (Radix + Tailwind v4, "Nova" preset, Lucide icons)
 ```
@@ -59,11 +60,14 @@ There is no one to answer permission prompts in headless mode, so anything not a
 |---|---|---|
 | Lessons, recall, hints, feedback, writing, placement sections B/C | **Chat** | Attempt-first, hint-before-answer and focus-mode messages are the skill's job; the UI only renders Markdown. |
 | C-test | **Panel**, `ctest.py make/show/score/result` | An input per gap is far easier than typing `1 ung 2 im …`. The server never sends the answer key; no misses or per-text scores until the end (placement stays neutral); stop early if text 1 < 30% (placement.md). "Hand back to the coach" tells the chat to read `ctest.py result` and continue. |
-| Listening audio | **Panel**, `speak.py say` + players inline in chat for the coach's own MP3s | |
+| Listening audio | **Panel**, `speak.py say` + players inline in chat for the coach's own MP3s | The coach's listening blocks keep the transcript hidden until you've answered (skill rule). |
+| Speaking (mic) | **Chat**: mic button → browser recording → `POST /api/recording` → saved to `<data>/<domain>/recordings/` → `transcribe.py` | Works like the Claude app's dictation: the text lands in the input box to check and send. The message is marked 🎤 with the recording's path, so the coach treats it as a spoken answer (e.g. the placement's typed-only rule still applies) and can run `pronounce.py` on it for a pronunciation check. All offline; needs `faster-whisper` (the skill's optional package; ~460 MB model, downloaded once). The browser asks for microphone permission the first time. |
 | Plan (guide) | **Panel**: profile, `notes/placement-*.md`, `placement.md` sections, `course.py status` + `schedule`, `course.md` module names | Shows *what's next* (setup → placement → today's lesson) with one button that starts it in the chat, your path, what the placement contains, the current unit and the full week-by-week schedule. The same "next step" is the main button on the chat's start screen. It re-reads after every coach reply. |
 | Progress | **Panel**, `dashboard.py` page in an iframe | |
 
 Inputs have spell-check and autocorrect off, so the browser can't give away answers.
+
+**The plan and the exam date.** The schedule is recomputed from `profile.md` (start date, exam date, `unit_weeks`) every time the Plan tab loads and after every coach reply. A later exam date adds spare weeks; the pace stays at one unit per week by design. An earlier date doesn't compress the plan by itself: the Plan tab shows **"Doesn't fit before the exam"** with the options (shorter units in Module 1, testing out of units), and the coach decides with you.
 
 ## Not logged in
 

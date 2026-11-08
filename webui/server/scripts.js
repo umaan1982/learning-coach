@@ -1,12 +1,15 @@
-// Runs the skill's deterministic Python scripts (no AI involved).
+// Runs Python: the skill's deterministic scripts (no AI involved), and our own helpers.
 import { spawn } from "node:child_process";
 import path from "node:path";
-import { DATA_ROOT, PYTHON, SCRIPTS_DIR } from "./config.js";
+import { fileURLToPath } from "node:url";
+import { DATA_ROOT, DOMAIN, PYTHON, SCRIPTS_DIR } from "./config.js";
 
-export function runScript(script, args = [], { timeoutMs = 60_000 } = {}) {
+const HERE = path.dirname(fileURLToPath(import.meta.url));
+
+function runPython(file, args, { timeoutMs = 60_000, cwd = SCRIPTS_DIR } = {}) {
   return new Promise((resolve) => {
-    const child = spawn(PYTHON, [path.join(SCRIPTS_DIR, script), ...args], {
-      cwd: SCRIPTS_DIR,
+    const child = spawn(PYTHON, [file, ...args], {
+      cwd,
       env: { ...process.env, LEARNING_COACH_DATA: DATA_ROOT, PYTHONIOENCODING: "utf-8", PYTHONUTF8: "1" },
       windowsHide: true,
     });
@@ -24,4 +27,13 @@ export function runScript(script, args = [], { timeoutMs = 60_000 } = {}) {
       resolve({ code, stdout: stdout.replace(/^\s*\n/, "").trimEnd(), stderr: stderr.trim() });
     });
   });
+}
+
+export function runScript(script, args = [], opts = {}) {
+  return runPython(path.join(SCRIPTS_DIR, script), args, opts);
+}
+
+/** Offline dictation (server/transcribe.py): same faster-whisper model as the skill's pronounce.py. */
+export function transcribe(audioPath) {
+  return runPython(path.join(HERE, "transcribe.py"), [SCRIPTS_DIR, audioPath, DOMAIN], { timeoutMs: 180_000 });
 }

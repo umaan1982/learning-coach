@@ -127,6 +127,10 @@ const APPEND_SYSTEM_PROMPT =
   `The UI has its own panels for the C-test, listening audio, course status and the progress dashboard, which run the skill's scripts directly. ` +
   `There is no clickable-choice tool here, so offer numbered options instead. ` +
   `Audio made with speak.py appears as a player in the chat automatically. ` +
+  // The UI's microphone = the Claude app's dictation, plus the recording itself.
+  `Messages that start with 🎤 were spoken into the UI's microphone and transcribed offline: treat them as dictated answers ` +
+  `(input mode: spoken). They include the recording's path, so when the session calls for a pronunciation check you can run ` +
+  `pronounce.py --audio "<that path>" --target "<the sentence>" --domain ${DOMAIN}. ` +
   // Same C-test items, same script and scoring; only the place where the learner types changes.
   `When a placement reaches the C-test, don't paste the texts into the chat: if today's C-test isn't done yet, ` +
   `ask the learner to do it in the UI's C-test tab (it runs ctest.py make/show/score) and to tell you when they're done; ` +

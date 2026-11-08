@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
-import { ChevronRight, GraduationCap, Loader2, RotateCcw, SendHorizontal, Square, Wrench } from "lucide-react";
+import { ChevronRight, GraduationCap, Loader2, Mic, RotateCcw, SendHorizontal, Square, Wrench, X } from "lucide-react";
 import { chatTurn } from "@/api.js";
 import Markdown from "@/Markdown.jsx";
 import LoginNotice from "@/components/LoginNotice.jsx";
+import MicButton from "@/components/MicButton.jsx";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -94,6 +95,8 @@ export default function Chat({ info, sendRef, onRecheck, onAuthProblem, next, on
   const [draft, setDraft] = useState("");
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState(null);
+  const [spoken, setSpoken] = useState(null); // {path, url, duration} of the recording behind the draft
+  const [micErr, setMicErr] = useState(null);
   const ctrl = useRef(null);
   const endRef = useRef(null);
   const inputRef = useRef(null);
@@ -112,12 +115,24 @@ export default function Chat({ info, sendRef, onRecheck, onAuthProblem, next, on
     });
 
   function send(text) {
-    const message = String(text ?? draft).trim();
-    if (!message || busy) return;
+    const shown = String(text ?? draft).trim();
+    if (!shown || busy) return;
+    // A spoken answer is marked for the coach (input mode "spoken") and carries the recording's path,
+    // so the coach can run pronounce.py on it. Suggestions and Plan buttons are never "spoken".
+    const voice = text === undefined ? spoken : null;
+    const message = voice
+      ? `🎤 ${shown}\n\n(Spoken into the microphone and transcribed offline. Recording: ${voice.path})`
+      : shown;
     setDraft("");
+    setSpoken(null);
+    setMicErr(null);
     setNotice(null);
     setBusy(true);
-    setTurns((ts) => [...ts.slice(-200), { role: "user", text: message }, { role: "coach", parts: [], status: "streaming" }]);
+    setTurns((ts) => [
+      ...ts.slice(-200),
+      { role: "user", text: shown, spoken: voice ? { url: voice.url } : null },
+      { role: "coach", parts: [], status: "streaming" },
+    ]);
     ctrl.current = chatTurn({ message, sessionId }, (ev) => {
       if (ev.type === "session") setSessionId(ev.id);
       else if (ev.type === "done") {
@@ -132,7 +147,8 @@ export default function Chat({ info, sendRef, onRecheck, onAuthProblem, next, on
           durationMs: ev.durationMs,
         }));
         if (ev.code === "not_logged_in") {
-          setDraft(message); // nothing was sent to Claude: keep the message for after login
+          setDraft(shown); // nothing was sent to Claude: keep the message (and recording) for after login
+          setSpoken(voice);
           onAuthProblem?.();
         }
         setBusy(false);
@@ -228,8 +244,12 @@ export default function Chat({ info, sendRef, onRecheck, onAuthProblem, next, on
           )}
           {turns.map((t, i) =>
             t.role === "user" ? (
-              <div key={i} className="max-w-[80%] self-end rounded-2xl rounded-br-md bg-primary px-4 py-2 whitespace-pre-wrap text-primary-foreground">
-                {t.text}
+              <div key={i} className="flex max-w-[80%] flex-col items-end gap-1 self-end">
+                <div className="rounded-2xl rounded-br-md bg-primary px-4 py-2 whitespace-pre-wrap text-primary-foreground">
+                  {t.spoken && <Mic className="mr-1.5 inline size-3.5 opacity-70" aria-label="spoken" />}
+                  {t.text}
+                </div>
+                {t.spoken && <audio controls src={t.spoken.url} className="h-8 w-56" />}
               </div>
             ) : (
               <div key={i} className="flex max-w-[92%] gap-3 self-start">
@@ -281,7 +301,32 @@ export default function Chat({ info, sendRef, onRecheck, onAuthProblem, next, on
           send();
         }}
       >
+        {(spoken || micErr) && (
+          <div className="mx-auto mb-2 flex max-w-3xl flex-wrap items-center gap-2 text-sm">
+            {spoken && (
+              <span className="flex items-center gap-2 rounded-full border bg-muted/50 py-0.5 pr-1 pl-3">
+                <Mic className="size-3.5" />
+                Spoken answer{spoken.duration ? ` · ${Math.round(spoken.duration)} s` : ""}
+                <audio controls src={spoken.url} className="h-7 w-44" />
+                <Button type="button" variant="ghost" size="icon-xs" onClick={() => setSpoken(null)} aria-label="Send as typed instead">
+                  <X />
+                </Button>
+              </span>
+            )}
+            {spoken && !spoken.error && <span className="text-xs text-muted-foreground">Check the text, fix it if the recogniser misheard, then send.</span>}
+            {(micErr || spoken?.error) && <span className="text-xs text-destructive">{micErr || spoken.error}</span>}
+          </div>
+        )}
         <div className="mx-auto flex max-w-3xl items-end gap-2">
+          <MicButton
+            disabled={busy}
+            onError={setMicErr}
+            onResult={(r) => {
+              setSpoken(r);
+              setDraft((d) => (d.trim() ? `${d.trim()} ${r.text}` : r.text).trim());
+              inputRef.current?.focus();
+            }}
+          />
           <Textarea
             ref={inputRef}
             value={draft}

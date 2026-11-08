@@ -10,7 +10,7 @@ import { CLAUDE_BIN, claudeStatus, ensureLoggedIn, runTurn } from "./claude.js";
 import { DATA_ROOT, DOMAIN, DOMAIN_DIR, HOST, PORT, PROD, SANDBOX, SKILL_DIR, WEBUI_DIR, isInside } from "./config.js";
 import { parseCourseStatus } from "./course.js";
 import { planState } from "./plan.js";
-import { runScript } from "./scripts.js";
+import { runScript, transcribe } from "./scripts.js";
 
 // ---------------------------------------------------------------- helpers
 const json = (res, status, body) => {
@@ -136,12 +136,49 @@ const routes = {
   },
 };
 
+const AUDIO_TYPES = { ".mp3": "audio/mpeg", ".webm": "audio/webm", ".ogg": "audio/ogg", ".m4a": "audio/mp4", ".wav": "audio/wav" };
+
 async function serveFile(res, url) {
-  // MP3s from speak.py; only files inside the learner data folder.
+  // Audio only (speak.py MP3s, mic recordings), and only from inside the learner data folder.
   const p = url.searchParams.get("path") || "";
-  if (!/\.mp3$/i.test(p) || !isInside(DATA_ROOT, p) || !fs.existsSync(p)) return json(res, 404, { error: "not found" });
-  res.writeHead(200, { "content-type": "audio/mpeg", "cache-control": "no-store" });
+  const type = AUDIO_TYPES[path.extname(p).toLowerCase()];
+  if (!type || !isInside(DATA_ROOT, p) || !fs.existsSync(p)) return json(res, 404, { error: "not found" });
+  res.writeHead(200, { "content-type": type, "cache-control": "no-store" });
   fs.createReadStream(p).pipe(res);
+}
+
+const readRaw = (req, limit = 25_000_000) =>
+  new Promise((resolve, reject) => {
+    const chunks = [];
+    let size = 0;
+    req.on("data", (c) => {
+      size += c.length;
+      if (size > limit) {
+        reject(new Error("recording too large"));
+        req.destroy();
+      } else chunks.push(c);
+    });
+    req.on("end", () => resolve(Buffer.concat(chunks)));
+    req.on("error", reject);
+  });
+
+// Microphone: save the recording in <data>/<domain>/recordings/, then transcribe it offline.
+async function saveRecording(req, res) {
+  const ext = { "audio/webm": ".webm", "audio/ogg": ".ogg", "audio/mp4": ".m4a", "audio/wav": ".wav" }[
+    String(req.headers["content-type"] || "").split(";")[0].trim()
+  ];
+  if (!ext) return json(res, 415, { error: "unsupported audio type" });
+  const body = await readRaw(req);
+  if (body.length < 1000) return json(res, 400, { error: "The recording is empty. Check that the right microphone is selected." });
+  const dir = path.join(DOMAIN_DIR, "recordings");
+  fs.mkdirSync(dir, { recursive: true });
+  const stamp = new Date().toISOString().replace(/[-:]/g, "").replace("T", "-").slice(0, 15);
+  const file = path.join(dir, `${stamp}-mic${ext}`);
+  fs.writeFileSync(file, body);
+  const r = await transcribe(file);
+  if (r.code === 3) return json(res, 200, { path: file, text: "", error: "Offline transcription needs faster-whisper: python -m pip install faster-whisper" });
+  if (r.code !== 0) return json(res, 200, { path: file, text: "", error: r.stderr.split(/\r?\n/).at(-1) || "transcription failed" });
+  return json(res, 200, { path: file, ...JSON.parse(r.stdout) });
 }
 
 async function serveDashboard(res) {
@@ -185,6 +222,7 @@ const server = http.createServer(async (req, res) => {
   try {
     if (url.pathname.startsWith("/api/")) {
       if (req.method === "POST" && url.pathname === "/api/chat") return await chat(req, res);
+      if (req.method === "POST" && url.pathname === "/api/recording") return await saveRecording(req, res);
       if (url.pathname === "/api/file") return await serveFile(res, url);
       if (url.pathname === "/api/dashboard") return await serveDashboard(res);
       const route = routes[`${req.method} ${url.pathname}`];
