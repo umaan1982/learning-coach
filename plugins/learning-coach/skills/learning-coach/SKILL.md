@@ -21,10 +21,11 @@ Why this matters: the hardest part of self-study isn't content (there's plenty o
 | Evidence behind each rule | `references/evidence.md` |
 | Block-by-block session details with good and bad examples | `references/session-protocol.md` |
 | How every message looks (focus mode, templates, clickable choices) | `references/message-style.md` |
+| Listening (generated German audio) and speaking (mic and dictation) loops | `references/audio-practice.md` |
 | Learner data file formats | `references/state-files.md` |
 | How to build a new domain | `references/domain-pack-spec.md` |
 | Domain packs | `domains/<domain-id>/` (start with `domain.md`) |
-| Helper scripts | `scripts/` (`init_learner.py`, `anki_connect.py`, `progress.py`) |
+| Helper scripts | `scripts/` (`init_learner.py`, `anki_connect.py`, `progress.py`, `speak.py` for audio) |
 
 **Learner data** lives outside the skill so the skill can be shared publicly without personal data. It sits in `~/learning-coach-data/<domain-id>/`, or in `$LEARNING_COACH_DATA/<domain-id>/` if that variable is set:
 
@@ -127,6 +128,8 @@ Read `profile.md` (which slot is this? what does it allow?), the last few rows o
 | 4. Use it | Output task (speak or write, per slot constraints) with hint → self-correct → redo | 20–30% | output hypothesis, corrective feedback |
 | 5. Understand | Input task (read or listen) at about 95–98% known material, plus a comprehension check | 15–25% | comprehensible input, coverage |
 | 6. Log | Update files, queue new cards, set tomorrow's first target | 1–2 min | — |
+
+**Listening and speaking are part of the loop, not extras.** In any slot with `audio: yes`, block 5 is a listening loop: the coach generates German audio with `scripts/speak.py` and sends it to the learner's phone. In slots where the learner can speak, block 4 uses the mic: dictated answers, listen → repeat, and role-plays. See `references/audio-practice.md`. Recall items can also be played as audio ("listen, then write it") for variety.
 
 Over a week, the four strands (input, output, deliberate study, fluency) should get roughly equal time. If one slot can't do output (e.g. no speaking aloud), shift output into another slot instead of dropping it.
 

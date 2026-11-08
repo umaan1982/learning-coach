@@ -55,5 +55,8 @@ date,skill,pattern,wrong,correct,source,resolved
 - `mock-YYYY-MM-DD.md`: section, raw score, scaled score, criteria notes, comparison with previous mocks.
 - `voice-YYYY-MM-DD.md`: raw pasted voice-chat reports.
 
+## audio/
+MP3 files made by `scripts/speak.py` for listening practice. Safe to delete at any time.
+
 ## anki-import.csv (fallback)
 Written by `anki_connect.py` when Anki isn't reachable. Tab-separated: `front<TAB>back<TAB>tags`. Import it in Anki via File → Import (field separator: Tab), then delete the file.

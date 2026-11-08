@@ -57,8 +57,13 @@ Constraint codes: **S** = needs a screen · **A** = needs audio/headphones · **
 - Role-play: Sprechen Teil 1 *Gemeinsam etwas planen* with the coach as partner (V)
 - Mini-presentation: Sprechen Teil 2 five-part structure, 2–3 min (V)
 - Voice chat in the Claude app (eyes-free): a role-play topic chosen in the session, ending with a mistake report to import (A+V)
+- Listen → repeat (echo): coach sends an audio sentence, learner repeats it via the mic, and the transcript is compared with the target (A+V)
+- Speak first: answer a Sprechen prompt by mic dictation (V)
 
 **Understand (block 5)**
+- Listen, exam style: generated Hören-style audio (`speak.py`), e.g. a station announcement (Teil 1, `--repeat 2`) or a two-voice conversation (Teil 3), plus richtig/falsch items (A)
+- Mini-Diktat: 1–2 sentences, `--speed both`, type what you hear (A)
+- Read-while-listening: a new text sent with its audio (S+A)
 - Read: a generated text at the learner's level (~150–250 words) plus 3–5 questions in German (S)
 - Read: a nachrichtenleicht.de article plus summary questions (S)
 - Listen: DW *Langsam gesprochene Nachrichten*, one item, metacognitive cycle (A)
@@ -80,6 +85,8 @@ Constraint codes: **S** = needs a screen · **A** = needs audio/headphones · **
 | Grammar cloze | Ich bleibe zu Hause, weil ich krank ___ . (sein) | **bin**: verb last in a *weil*-clause |
 | Redemittel | Sprechen T1: suggest an alternative politely | **Wie wäre es, wenn wir …?** / Ich hätte einen anderen Vorschlag: … |
 | Error card | ✗ mit mein Freund → fix it | **mit meinem Freund**: *mit* + Dativ |
+
+**Audio on cards:** add a `say` column with the German to speak (e.g. `die Wohnung`). When Anki is reachable, `anki_connect.py add --audio` attaches the audio to the back of the card, so every review is also a listening rep.
 
 Tags: `b1` plus a topic (`wohnen`, `arbeit`, …) or the pattern tag (`case-after-prep`). Keep one fact per card.
 
@@ -125,6 +132,9 @@ Tags: `b1` plus a topic (`wohnen`, `arbeit`, …) or the pattern tag (`case-afte
 | `pron-vowel` | vowel length or umlaut pronunciation |
 | `pron-consonant` | ch, r, z, final devoicing … |
 | `fluency` | long pauses or restarts (self-reported or observed) |
+| `listen-sound` | misheard a sound (ü/u, e/ä, ch/sch, b/p …) in listening or Diktat |
+| `listen-ending` | missed an unstressed ending (-en, -em, -er) when listening |
+| `listen-word-boundary` | split or merged words wrongly when listening |
 
 ## 7. Confusable pairs (Contrast block)
 1. Wechselpräpositionen: **Dativ (wo?) vs Akkusativ (wohin?)**, with liegen/legen, stehen/stellen, sitzen/setzen, hängen

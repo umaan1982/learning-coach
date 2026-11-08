@@ -81,6 +81,9 @@ The full research brief, with discussion, is in the repository at `docs/research
 - **Pronunciation instruction** ◐: Lee, Jang & Plonsky (2015), 86 reports: effective. Computer-assisted pronunciation training has a medium effect (2024 meta-analysis). **Shadowing** improves fluency and prosody; evidence on individual sounds is inconclusive.
 - **4/3/2 technique** ◐ (Nation 1989): retell the same content in 4, then 3, then 2 minutes → fluency through repetition plus time pressure.
 - **Metacognitive listening cycle** ◐ (Vandergrift & Tafaghodtari 2010, *Language Learning* 60(2)): predict → listen → verify → listen again → reflect. Beat conventional practice, especially for weaker listeners.
+- **Synthetic (TTS) voices** ◐: EFL learners did about as well with TTS as with a human voice on comprehension, dictation and sound identification (Bione, Cardoso et al.). Liakin, Cardoso & Liakina (2017) report TTS benefits. → Generated German audio is a valid listening source.
+- **Reading vs listening vs read-while-listening** ✅◐: similar incidental vocabulary gains (Webb, Uchihara & Yanagisawa 2023 meta-analysis, 24 studies).
+- **Dictation** ◐: small studies. It improves phoneme recognition, but transfer to overall listening is unproven, so keep it short.
 - **Apps** ◐: Duolingo-authored studies (Spanish/French) show receptive skills up to roughly mid-B1. Speaking stays mostly at A2. No evidence that an app alone reaches a full B1.
 
 ## 11. Learner factors

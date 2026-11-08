@@ -6,8 +6,10 @@ which listens on http://127.0.0.1:8765.
 
 Commands:
   check                                   -> is Anki reachable? list decks
-  add  --deck D --file cards.csv [--model Basic] [--domain ID]
-                                          -> add notes; CSV columns: front,back,tags
+  add  --deck D --file cards.csv [--model Basic] [--domain ID] [--audio]
+                                          -> add notes; CSV columns: front,back,tags[,say]
+                                             (--audio: speak 'say' via edge-tts and attach
+                                             it to the Back field)
                                              (tags space-separated). Falls back to
                                              <data>/<domain>/anki-import.csv if Anki
                                              is not reachable.
@@ -17,9 +19,13 @@ Commands:
 import argparse
 import csv
 import json
+import os
+import shutil
 import sys
+import tempfile
 import urllib.error
 import urllib.request
+from pathlib import Path
 
 from _common import domain_dir
 
@@ -57,6 +63,29 @@ def cmd_check(_):
     print(f"AnkiConnect OK (api v{v}). Decks: {', '.join(decks)}")
 
 
+def attach_audio(cards, notes, tmpdir):
+    """Generate TTS for each card's 'say' column and attach it to the Back field."""
+    import asyncio
+    import hashlib
+    from speak import synth, VOICES, RATE
+    voice = VOICES["de-DE"][0]
+    made = 0
+    for c, n in zip(cards, notes):
+        text = (c.get("say") or "").strip()
+        if not text:
+            continue
+        name = "lc-" + hashlib.sha1(text.encode("utf-8")).hexdigest()[:12] + ".mp3"
+        path = os.path.join(tmpdir, name)
+        try:
+            asyncio.run(synth(text, voice, RATE["normal"], Path(path)))
+        except Exception as e:  # keep the card, just without sound
+            print(f"audio skipped for '{text}': {e}", file=sys.stderr)
+            continue
+        n["audio"] = [{"path": path, "filename": name, "fields": ["Back"]}]
+        made += 1
+    return made
+
+
 def cmd_add(a):
     cards = read_cards(a.file)
     try:
@@ -71,11 +100,15 @@ def cmd_add(a):
             }
             for c in cards
         ]
+        tmp = tempfile.mkdtemp(prefix="lc-audio-")
+        if a.audio:
+            print(f"audio attached to {attach_audio(cards, notes, tmp)} card(s)")
         allowed = invoke("canAddNotes", notes=notes)
         to_add = [n for n, ok in zip(notes, allowed) if ok]
         ids = invoke("addNotes", notes=to_add) if to_add else []
         added = sum(1 for i in ids if i)
         print(f"added {added} card(s) to '{a.deck}'; skipped {len(notes) - len(to_add)} duplicate/invalid")
+        shutil.rmtree(tmp, ignore_errors=True)  # AnkiConnect has copied the audio into Anki's media folder
     except AnkiUnavailable:
         if not a.domain:
             print("Anki not reachable and no --domain given for fallback file", file=sys.stderr)
@@ -86,7 +119,8 @@ def cmd_add(a):
             w = csv.writer(f, delimiter="\t")
             for c in cards:
                 w.writerow([c["front"], c["back"], c.get("tags", "")])
-        print(f"Anki not reachable: queued {len(cards)} card(s) in {out} (import via File > Import, Tab separator)")
+        print(f"Anki not reachable: queued {len(cards)} card(s) in {out} (import via File > Import, Tab separator)"
+              + ("; audio needs Anki running, re-add with --audio later" if a.audio else ""))
     return 0
 
 
@@ -111,6 +145,7 @@ def main() -> int:
     p.add_argument("--file", required=True)
     p.add_argument("--model", default="Basic")
     p.add_argument("--domain")
+    p.add_argument("--audio", action="store_true", help="attach TTS audio from the CSV's 'say' column (needs edge-tts)")
     for name in ("due", "stats"):
         q = sub.add_parser(name)
         q.add_argument("--deck", required=True)

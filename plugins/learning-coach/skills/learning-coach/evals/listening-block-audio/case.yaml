@@ -1,0 +1,9 @@
+schema_version: "1.1"
+name: listening-block-audio
+expected_outcome: |
+  The coach runs a listening loop: it writes a short German listening text or two-voice dialogue at A2/B1
+  level, generates an MP3 with scripts/speak.py into the learner's audio folder, gives the learner the
+  audio (or its path), keeps the transcript hidden, and asks one listening question (e.g. richtig/falsch)
+  in a short focus-mode message. No speaking aloud is requested on the train.
+context:
+  scaffold_script: place-files.sh

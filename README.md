@@ -56,6 +56,8 @@ Then just talk to it ("lernen", "set me up for German B1"), or call it with `/le
 
 **Use from your phone:** start the session on your computer and turn on Remote Control. Then open the Claude app → **Code** and continue there. Your computer has to stay on.
 
+**Listening and speaking:** `pip install edge-tts` (internet needed). The coach then generates German audio (single sentences, slow-then-normal, or two-voice exam-style conversations) and sends the MP3 to your phone. For speaking, answer through the Claude app's mic (dictation). The coach compares the transcript with the target sentence. With `--audio`, flashcards get sound too. See [`references/audio-practice.md`](plugins/learning-coach/skills/learning-coach/references/audio-practice.md).
+
 ## Your data
 Learner data never lives in this repo. By default it's in `~/learning-coach-data/<domain>/` (override with `LEARNING_COACH_DATA`):
 - `profile.md`
@@ -89,7 +91,7 @@ claude plugin eval . --allow-tools Write,Edit,Bash --scaffold
 ```
 
 ## Status
-v0.1.0: first working version. Roadmap: run the evals and iterate, add pronunciation feedback, and build a second domain to prove the engine is generic.
+v0.2.0: focus-mode messages, listening (generated German audio) and speaking (mic dictation) loops, audio flashcards. Roadmap: run the evals and iterate, add pronunciation feedback, and build a second domain to prove the engine is generic.
 
 ## License
 [MIT](LICENSE) © 2026 Usman Ahmed Saeed. The research summaries cite their original authors; the Goethe-Institut materials linked in `sources.md` belong to their owners and are not redistributed here.
