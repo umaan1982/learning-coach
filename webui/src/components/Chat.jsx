@@ -337,15 +337,6 @@ export default function Chat({ info, sendRef, onRecheck, onAuthProblem, next, on
           </div>
         )}
         <div className="mx-auto flex max-w-3xl items-end gap-2">
-          <MicButton
-            disabled={busy}
-            onError={setMicErr}
-            onResult={(r) => {
-              setSpoken(r);
-              setDraft((d) => (d.trim() ? `${d.trim()} ${r.text}` : r.text).trim());
-              inputRef.current?.focus();
-            }}
-          />
           <Textarea
             ref={inputRef}
             value={draft}
@@ -362,6 +353,16 @@ export default function Chat({ info, sendRef, onRecheck, onAuthProblem, next, on
             autoFocus
             spellCheck={false}
             lang="de"
+          />
+          {/* Mic and Send sit together on the right, like in the Claude app */}
+          <MicButton
+            disabled={busy}
+            onError={setMicErr}
+            onResult={(r) => {
+              setSpoken(r);
+              setDraft((d) => (d.trim() ? `${d.trim()} ${r.text}` : r.text).trim());
+              inputRef.current?.focus();
+            }}
           />
           {busy ? (
             <Button type="button" variant="destructive" size="icon-lg" onClick={() => ctrl.current?.abort()} aria-label="Stop">
