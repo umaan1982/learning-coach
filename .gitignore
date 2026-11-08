@@ -7,6 +7,10 @@ anki-import.csv
 *-workspace/
 **/evals/results/
 
+# Web UI build output
+webui/node_modules/
+webui/dist/
+
 # Python / OS
 __pycache__/
 *.pyc

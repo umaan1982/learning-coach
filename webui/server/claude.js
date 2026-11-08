@@ -1,0 +1,239 @@
+// Drives the locally installed Claude Code CLI in headless (print) mode.
+// Runs under the user's own Claude login (subscription). API-key variables are
+// stripped from the child environment so this can never fall back to paid API billing.
+import { execFileSync, spawn } from "node:child_process";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
+import { DATA_ROOT, DOMAIN, SKILL_DIR } from "./config.js";
+
+const isWin = process.platform === "win32";
+
+// ---------------------------------------------------------------- find the CLI
+function semverKey(v) {
+  return v.split(".").map((n) => String(Number(n) || 0).padStart(6, "0")).join(".");
+}
+
+function findOnPath() {
+  const names = isWin ? ["claude.exe", "claude.cmd"] : ["claude"];
+  for (const dir of (process.env.PATH || "").split(path.delimiter)) {
+    for (const n of names) {
+      const p = path.join(dir, n);
+      if (dir && fs.existsSync(p)) return p;
+    }
+  }
+  return null;
+}
+
+function findDesktopBundled() {
+  // The Claude desktop app keeps its own copy of the CLI at %APPDATA%\Claude\claude-code\<version>\<hash>\claude.exe
+  if (!isWin || !process.env.APPDATA) return null;
+  const root = path.join(process.env.APPDATA, "Claude", "claude-code");
+  if (!fs.existsSync(root)) return null;
+  const versions = fs.readdirSync(root).filter((v) => /^\d+\.\d+\.\d+$/.test(v));
+  versions.sort((a, b) => (semverKey(a) < semverKey(b) ? 1 : -1));
+  for (const v of versions) {
+    for (const h of fs.readdirSync(path.join(root, v))) {
+      const p = path.join(root, v, h, "claude.exe");
+      if (fs.existsSync(p)) return p;
+    }
+  }
+  return null;
+}
+
+export function findClaude() {
+  if (process.env.CLAUDE_BIN) return process.env.CLAUDE_BIN;
+  const local = path.join(os.homedir(), ".local", "bin", isWin ? "claude.exe" : "claude");
+  return findOnPath() || (fs.existsSync(local) ? local : null) || findDesktopBundled();
+}
+
+export const CLAUDE_BIN = findClaude();
+
+// ---------------------------------------------------------------- environment
+const STRIP = /^(ANTHROPIC_API_KEY|ANTHROPIC_AUTH_TOKEN|ANTHROPIC_BASE_URL|CLAUDECODE|CLAUDE_PID|CLAUDE_EFFORT|CLAUDE_AGENT_SDK_.*|CLAUDE_CODE_.*)$/;
+const KEEP = new Set(["CLAUDE_CODE_OAUTH_TOKEN", "CLAUDE_CODE_GIT_BASH_PATH"]);
+
+export function childEnv() {
+  const env = {};
+  for (const [k, v] of Object.entries(process.env)) {
+    if (STRIP.test(k) && !KEEP.has(k)) continue; // no API keys; no leftovers from a parent Claude session
+    env[k] = v;
+  }
+  env.LEARNING_COACH_DATA = DATA_ROOT;
+  return env;
+}
+
+function spawnClaude(args) {
+  // .cmd shims (npm installs) need a shell on Windows; our args are fixed strings without
+  // shell metacharacters, and the learner's text goes through stdin, never the command line.
+  const shell = isWin && /\.cmd$/i.test(CLAUDE_BIN);
+  const argv = shell ? args.map((a) => (/[\s()*]/.test(a) ? `"${a}"` : a)) : args;
+  return spawn(shell ? `"${CLAUDE_BIN}"` : CLAUDE_BIN, argv, {
+    cwd: DATA_ROOT,
+    env: childEnv(),
+    shell,
+    windowsHide: true,
+  });
+}
+
+export function claudeStatus() {
+  if (!CLAUDE_BIN) return { bin: null, version: null, loggedIn: false };
+  const opts = { env: childEnv(), encoding: "utf8", timeout: 20_000, windowsHide: true, shell: isWin && /\.cmd$/i.test(CLAUDE_BIN) };
+  const bin = opts.shell ? `"${CLAUDE_BIN}"` : CLAUDE_BIN;
+  let version = null;
+  let loggedIn = false;
+  let authMethod = null;
+  try {
+    version = execFileSync(bin, ["--version"], opts).trim();
+  } catch { /* reported as null */ }
+  try {
+    const s = JSON.parse(execFileSync(bin, ["auth", "status"], opts));
+    loggedIn = !!s.loggedIn;
+    authMethod = s.authMethod || null;
+  } catch { /* older CLIs: unknown */ }
+  return { bin: CLAUDE_BIN, version, loggedIn, authMethod };
+}
+
+// ---------------------------------------------------------------- one chat turn
+// Kept deliberately small: it says *where* the coach is running, not *how* to coach.
+// The coaching process stays in SKILL.md and references/.
+const APPEND_SYSTEM_PROMPT =
+  `The learner is talking to you through a local desktop web UI for the learning-coach skill. ` +
+  `For every learner message, follow the learning-coach skill (domain: ${DOMAIN}); its process and message style apply unchanged. ` +
+  `The UI has its own panels for the C-test, listening audio, course status and the progress dashboard, which run the skill's scripts directly. ` +
+  `There is no clickable-choice tool here, so offer numbered options instead.`;
+
+const ALLOWED_TOOLS = ["Skill", "Read", "Glob", "Grep", "Write", "Edit", "Bash(python *)", "Bash(python3 *)", "Bash(py *)"];
+
+const MP3 = /(?:[A-Za-z]:[\\/]|\/)[^\s"'<>|*?`]*?\.mp3/gi;
+
+/**
+ * Run one learner message through `claude -p`, resuming `sessionId` if given.
+ * Calls `emit(event)` with normalised events:
+ *   {type:"session", id, model} {type:"delta", text} {type:"block"} {type:"text", text}
+ *   {type:"tool", name, detail} {type:"audio", path} {type:"done", ok, error, sessionId, durationMs}
+ * Returns a function that aborts the turn.
+ */
+export function runTurn({ message, sessionId, model }, emit) {
+  if (!CLAUDE_BIN) {
+    emit({ type: "done", ok: false, error: "Claude Code CLI not found. Install it, or set CLAUDE_BIN." });
+    return () => {};
+  }
+  fs.mkdirSync(DATA_ROOT, { recursive: true });
+  const args = [
+    "-p",
+    "--output-format", "stream-json",
+    "--verbose",
+    "--include-partial-messages",
+    "--permission-mode", "acceptEdits",
+    "--permission-prompts", "none",
+    "--add-dir", SKILL_DIR,
+    "--append-system-prompt", APPEND_SYSTEM_PROMPT,
+    "--disallowedTools", "AskUserQuestion",
+    "--allowedTools", ...ALLOWED_TOOLS,
+  ];
+  if (sessionId) args.push("--resume", sessionId);
+  if (model || process.env.LC_MODEL) args.push("--model", model || process.env.LC_MODEL);
+
+  const child = spawnClaude(args);
+  child.stdin.end(message, "utf8");
+
+  let buf = "";
+  let stderr = "";
+  let deltasThisMessage = false;
+  let textBlocksThisMessage = 0;
+  let finished = false;
+  const seenAudio = new Set();
+
+  const audioFrom = (text) => {
+    for (const m of String(text).matchAll(MP3)) {
+      if (!seenAudio.has(m[0])) {
+        seenAudio.add(m[0]);
+        emit({ type: "audio", path: m[0] });
+      }
+    }
+  };
+
+  const handle = (o) => {
+    switch (o.type) {
+      case "system":
+        if (o.subtype === "init") emit({ type: "session", id: o.session_id, model: o.model });
+        break;
+      case "stream_event": {
+        const ev = o.event || {};
+        if (ev.type === "message_start") {
+          deltasThisMessage = false;
+          textBlocksThisMessage = 0;
+        } else if (ev.type === "content_block_start" && ev.content_block?.type === "text") {
+          if (textBlocksThisMessage++ > 0) emit({ type: "block" });
+        } else if (ev.type === "content_block_delta" && ev.delta?.type === "text_delta") {
+          deltasThisMessage = true;
+          emit({ type: "delta", text: ev.delta.text });
+        }
+        break;
+      }
+      case "assistant":
+        for (const b of o.message?.content || []) {
+          if (b.type === "text") {
+            if (!deltasThisMessage) emit({ type: "text", text: b.text });
+            audioFrom(b.text);
+          } else if (b.type === "tool_use") {
+            emit({ type: "tool", name: b.name, detail: toolDetail(b) });
+          }
+        }
+        break;
+      case "user": // tool results: speak.py prints the MP3 path
+        for (const b of o.message?.content || []) {
+          if (b.type !== "tool_result") continue;
+          const c = Array.isArray(b.content) ? b.content.map((x) => x.text || "").join("\n") : b.content;
+          audioFrom(c || "");
+        }
+        break;
+      case "result":
+        finished = true;
+        emit({
+          type: "done",
+          ok: !o.is_error,
+          error: o.is_error ? o.result || o.subtype || "error" : null,
+          sessionId: o.session_id,
+          durationMs: o.duration_ms,
+        });
+        break;
+    }
+  };
+
+  child.stdout.setEncoding("utf8").on("data", (d) => {
+    buf += d;
+    let i;
+    while ((i = buf.indexOf("\n")) >= 0) {
+      const line = buf.slice(0, i).trim();
+      buf = buf.slice(i + 1);
+      if (!line) continue;
+      try {
+        handle(JSON.parse(line));
+      } catch { /* not JSON: ignore */ }
+    }
+  });
+  child.stderr.setEncoding("utf8").on("data", (d) => (stderr += d));
+  child.on("error", (e) => {
+    if (!finished) emit({ type: "done", ok: false, error: String(e) });
+    finished = true;
+  });
+  child.on("close", (code) => {
+    if (!finished) emit({ type: "done", ok: false, error: stderr.trim() || `claude exited with code ${code}` });
+    finished = true;
+  });
+
+  return () => {
+    if (!finished) child.kill();
+  };
+}
+
+function toolDetail(b) {
+  const i = b.input || {};
+  if (i.command) return String(i.command).replace(/"[^"]*[\\/]scripts[\\/]/g, '"…/scripts/').slice(0, 140);
+  if (i.file_path) return path.basename(String(i.file_path));
+  if (i.skill) return String(i.skill);
+  if (i.pattern) return String(i.pattern);
+  return "";
+}

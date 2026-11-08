@@ -1,0 +1,22 @@
+{
+  "name": "learning-coach-webui",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Local desktop web UI for the learning-coach skill. Drives the local Claude Code CLI; no API key.",
+  "license": "PolyForm-Noncommercial-1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "node server/index.js",
+    "dev:sandbox": "node server/index.js --sandbox",
+    "build": "vite build",
+    "start": "node server/index.js --prod"
+  },
+  "dependencies": {
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.5.0",
+    "vite": "^6.3.5"
+  }
+}
