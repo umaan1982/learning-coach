@@ -8,6 +8,7 @@ import http from "node:http";
 import path from "node:path";
 import { CLAUDE_BIN, claudeStatus, ensureLoggedIn, runTurn } from "./claude.js";
 import { DATA_ROOT, DOMAIN, DOMAIN_DIR, HOST, PORT, PROD, SANDBOX, SKILL_DIR, WEBUI_DIR, isInside } from "./config.js";
+import { addLearner, ctxFor, getLearner, learnerFromRequest, listLearners, renameLearner } from "./learners.js";
 import { parseCourseStatus } from "./course.js";
 import { planState } from "./plan.js";
 import { runScript, transcribe } from "./scripts.js";
@@ -46,16 +47,16 @@ function trusted(req) {
 }
 
 // ---------------------------------------------------------------- C-test (ctest.py)
-function latestCtestFile() {
-  const notes = path.join(DOMAIN_DIR, "notes");
+function latestCtestFile(ctx) {
+  const notes = path.join(ctx.domainDir, "notes");
   if (!fs.existsSync(notes)) return null;
   const files = fs.readdirSync(notes).filter((f) => /^ctest-\d{4}-\d{2}-\d{2}\.json$/.test(f)).sort();
   return files.length ? path.join(notes, files.at(-1)) : null;
 }
 
 /** The test without its key: the browser never receives the missing letters. */
-function ctestState() {
-  const file = latestCtestFile();
+function ctestState(ctx) {
+  const file = latestCtestFile(ctx);
   if (!file) return { exists: false };
   const t = JSON.parse(fs.readFileSync(file, "utf8"));
   return {
@@ -68,43 +69,63 @@ function ctestState() {
   };
 }
 
+// Learners as the browser sees them (no folder paths).
+const publicLearner = (l) => ({ id: l.id, name: l.name });
+
 // ---------------------------------------------------------------- routes
 const routes = {
-  "GET /api/info": async () => ({
+  "GET /api/info": async (req, url, ctx) => ({
     domain: DOMAIN,
-    dataRoot: DATA_ROOT,
+    dataRoot: ctx.dataRoot,
     sandbox: SANDBOX,
     skillDir: SKILL_DIR,
-    hasData: fs.existsSync(path.join(DOMAIN_DIR, "profile.md")),
+    hasData: fs.existsSync(path.join(ctx.domainDir, "profile.md")),
+    learner: publicLearner(ctx.learner),
+    learners: listLearners().map(publicLearner),
     claude: claudeStatus(),
   }),
 
-  "GET /api/course": async () => {
-    const r = await runScript("course.py", ["status", "--domain", DOMAIN]);
+  // ---------------------------------------------------------------- learners (learners.js)
+  "POST /api/learners": async (req) => {
+    const { name } = await readBody(req);
+    const l = addLearner(name);
+    // Same start as the first learner: the skill's templates (profile, CSVs) in their own folder.
+    const r = await runScript("init_learner.py", ["--domain", DOMAIN], { dataRoot: l.root });
+    if (r.code !== 0) throw new Error(r.stderr || r.stdout);
+    return publicLearner(l);
+  },
+
+  "POST /api/learners/rename": async (req) => {
+    const { id, name } = await readBody(req);
+    return publicLearner(renameLearner(String(id), name));
+  },
+
+  "GET /api/course": async (req, url, ctx) => {
+    const r = await runScript("course.py", ["status", "--domain", DOMAIN], { dataRoot: ctx.dataRoot });
     if (r.code !== 0) return { ok: false, text: r.stderr || r.stdout };
     return { ok: true, text: r.stdout, ...parseCourseStatus(r.stdout) };
   },
 
-  "GET /api/plan": async () => planState(ctestState()),
+  "GET /api/plan": async (req, url, ctx) => planState(ctx, ctestState(ctx)),
 
-  "GET /api/ctest": async () => ctestState(),
+  "GET /api/ctest": async (req, url, ctx) => ctestState(ctx),
 
-  "POST /api/ctest/make": async () => {
-    const r = await runScript("ctest.py", ["make", "--domain", DOMAIN]);
+  "POST /api/ctest/make": async (req, url, ctx) => {
+    const r = await runScript("ctest.py", ["make", "--domain", DOMAIN], { dataRoot: ctx.dataRoot });
     if (r.code !== 0) throw new Error(r.stderr || r.stdout);
-    return ctestState();
+    return ctestState(ctx);
   },
 
-  "GET /api/ctest/text": async (req, url) => {
+  "GET /api/ctest/text": async (req, url, ctx) => {
     const n = Number(url.searchParams.get("n"));
-    const r = await runScript("ctest.py", ["show", "--domain", DOMAIN, "--text", String(n)]);
+    const r = await runScript("ctest.py", ["show", "--domain", DOMAIN, "--text", String(n)], { dataRoot: ctx.dataRoot });
     if (r.code !== 0) throw new Error(r.stderr || r.stdout);
     // "Text 2/4 · ~5 min\n\n<display with Wo___(1) gaps>"
     const [header, ...rest] = r.stdout.split(/\r?\n/);
     return { n, header, display: rest.join("\n").trim() };
   },
 
-  "POST /api/ctest/score": async (req) => {
+  "POST /api/ctest/score": async (req, url, ctx) => {
     const { text, answers } = await readBody(req);
     const n = Number(text);
     // "1 us 2 st ...": ctest.py's own answer format; blanks are left out and count as wrong.
@@ -113,24 +134,24 @@ const routes = {
       .filter(([k, v]) => k > 0 && v)
       .sort((a, b) => a[0] - b[0])
       .map(([k, v]) => `${k} ${v}`);
-    const r = await runScript("ctest.py", ["score", "--domain", DOMAIN, "--text", String(n), "--answers", parts.join(" ") || "0 -"]);
+    const r = await runScript("ctest.py", ["score", "--domain", DOMAIN, "--text", String(n), "--answers", parts.join(" ") || "0 -"], { dataRoot: ctx.dataRoot });
     if (r.code !== 0) throw new Error(r.stderr || r.stdout);
     // Only the first line ("text 2 (B1.1): 14/20"); the misses stay in the log for the coach.
     const m = r.stdout.match(/:\s*(\d+)\/(\d+)/);
-    return { n, score: m ? Number(m[1]) : null, max: m ? Number(m[2]) : null, state: ctestState() };
+    return { n, score: m ? Number(m[1]) : null, max: m ? Number(m[2]) : null, state: ctestState(ctx) };
   },
 
-  "GET /api/ctest/result": async () => {
-    const r = await runScript("ctest.py", ["result", "--domain", DOMAIN]);
+  "GET /api/ctest/result": async (req, url, ctx) => {
+    const r = await runScript("ctest.py", ["result", "--domain", DOMAIN], { dataRoot: ctx.dataRoot });
     return { ok: r.code === 0, text: r.stdout || r.stderr };
   },
 
   // ---------------------------------------------------------------- audio (speak.py)
-  "POST /api/speak": async (req) => {
+  "POST /api/speak": async (req, url, ctx) => {
     const { text, speed } = await readBody(req);
     if (!text || !String(text).trim()) throw new Error("no text");
     const sp = ["slow", "normal", "both"].includes(speed) ? speed : "normal";
-    const r = await runScript("speak.py", ["say", String(text), "--domain", DOMAIN, "--speed", sp], { timeoutMs: 120_000 });
+    const r = await runScript("speak.py", ["say", String(text), "--domain", DOMAIN, "--speed", sp], { timeoutMs: 120_000, dataRoot: ctx.dataRoot });
     if (r.code !== 0) throw new Error(r.stderr || r.stdout || "audio generation failed");
     return { path: r.stdout.split(/\r?\n/).at(-1).trim() };
   },
@@ -138,11 +159,11 @@ const routes = {
 
 const AUDIO_TYPES = { ".mp3": "audio/mpeg", ".webm": "audio/webm", ".ogg": "audio/ogg", ".m4a": "audio/mp4", ".wav": "audio/wav" };
 
-async function serveFile(res, url) {
+async function serveFile(res, url, ctx) {
   // Audio only (speak.py MP3s, mic recordings), and only from inside the learner data folder.
   const p = url.searchParams.get("path") || "";
   const type = AUDIO_TYPES[path.extname(p).toLowerCase()];
-  if (!type || !isInside(DATA_ROOT, p) || !fs.existsSync(p)) return json(res, 404, { error: "not found" });
+  if (!type || !isInside(ctx.dataRoot, p) || !fs.existsSync(p)) return json(res, 404, { error: "not found" });
   res.writeHead(200, { "content-type": type, "cache-control": "no-store" });
   fs.createReadStream(p).pipe(res);
 }
@@ -163,14 +184,14 @@ const readRaw = (req, limit = 25_000_000) =>
   });
 
 // Microphone: save the recording in <data>/<domain>/recordings/, then transcribe it offline.
-async function saveRecording(req, res) {
+async function saveRecording(req, res, ctx) {
   const ext = { "audio/webm": ".webm", "audio/ogg": ".ogg", "audio/mp4": ".m4a", "audio/wav": ".wav" }[
     String(req.headers["content-type"] || "").split(";")[0].trim()
   ];
   if (!ext) return json(res, 415, { error: "unsupported audio type" });
   const body = await readRaw(req);
   if (body.length < 1000) return json(res, 400, { error: "The recording is empty. Check that the right microphone is selected." });
-  const dir = path.join(DOMAIN_DIR, "recordings");
+  const dir = path.join(ctx.domainDir, "recordings");
   fs.mkdirSync(dir, { recursive: true });
   const stamp = new Date().toISOString().replace(/[-:]/g, "").replace("T", "-").slice(0, 15);
   const file = path.join(dir, `${stamp}-mic${ext}`);
@@ -181,19 +202,19 @@ async function saveRecording(req, res) {
   return json(res, 200, { path: file, ...JSON.parse(r.stdout) });
 }
 
-async function serveDashboard(res) {
-  if (!fs.existsSync(DOMAIN_DIR)) {
+async function serveDashboard(res, ctx) {
+  if (!fs.existsSync(ctx.domainDir)) {
     res.writeHead(200, { "content-type": "text/html; charset=utf-8" });
     return res.end(`<p style="font-family:sans-serif">No data folder for ${DOMAIN} yet. Start with the coach in the chat.</p>`);
   }
-  const r = await runScript("dashboard.py", ["--domain", DOMAIN]);
+  const r = await runScript("dashboard.py", ["--domain", DOMAIN], { dataRoot: ctx.dataRoot });
   if (r.code !== 0) return json(res, 500, { error: r.stderr || r.stdout });
   res.writeHead(200, { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" });
   fs.createReadStream(r.stdout.split(/\r?\n/).at(-1).trim()).pipe(res);
 }
 
 // One chat turn, streamed back as NDJSON (one event per line).
-async function chat(req, res) {
+async function chat(req, res, ctx) {
   const { message, sessionId } = await readBody(req);
   if (!message || !String(message).trim()) return json(res, 400, { error: "empty message" });
   res.writeHead(200, { "content-type": "application/x-ndjson; charset=utf-8", "cache-control": "no-store" });
@@ -202,9 +223,9 @@ async function chat(req, res) {
     const s = auth.status;
     return res.end(JSON.stringify({ type: "done", ok: false, code: "not_logged_in", error: "Claude CLI not logged in", loginCommand: s.loginCommand }) + "\n");
   }
-  const abort = runTurn({ message: String(message), sessionId }, (ev) => {
+  const abort = runTurn({ message: String(message), sessionId, ctx }, (ev) => {
     if (ev.type === "audio") {
-      if (!isInside(DATA_ROOT, ev.path)) return;
+      if (!isInside(ctx.dataRoot, ev.path)) return;
       ev.url = `/api/file?path=${encodeURIComponent(ev.path)}`;
     }
     res.write(JSON.stringify(ev) + "\n");
@@ -221,13 +242,15 @@ const server = http.createServer(async (req, res) => {
   if (!trusted(req)) return json(res, 403, { error: "forbidden" });
   try {
     if (url.pathname.startsWith("/api/")) {
-      if (req.method === "POST" && url.pathname === "/api/chat") return await chat(req, res);
-      if (req.method === "POST" && url.pathname === "/api/recording") return await saveRecording(req, res);
-      if (url.pathname === "/api/file") return await serveFile(res, url);
-      if (url.pathname === "/api/dashboard") return await serveDashboard(res);
+      // Whose data? The page sets a cookie when you pick a learner, so iframes and audio players carry it too.
+      const ctx = ctxFor(learnerFromRequest(req));
+      if (req.method === "POST" && url.pathname === "/api/chat") return await chat(req, res, ctx);
+      if (req.method === "POST" && url.pathname === "/api/recording") return await saveRecording(req, res, ctx);
+      if (url.pathname === "/api/file") return await serveFile(res, url, ctx);
+      if (url.pathname === "/api/dashboard") return await serveDashboard(res, ctx);
       const route = routes[`${req.method} ${url.pathname}`];
       if (!route) return json(res, 404, { error: "no such route" });
-      return json(res, 200, await route(req, url));
+      return json(res, 200, await route(req, url, ctx));
     }
     if (vite) return vite.middlewares(req, res);
     return serveStatic(res, url);
@@ -247,7 +270,7 @@ function serveStatic(res, url) {
 
 async function prepareSandbox() {
   if (!SANDBOX || fs.existsSync(path.join(DOMAIN_DIR, "profile.md"))) return;
-  const r = await runScript("init_learner.py", ["--domain", DOMAIN]);
+  const r = await runScript("init_learner.py", ["--domain", DOMAIN], { dataRoot: DATA_ROOT });
   console.log(r.stdout || r.stderr);
 }
 
@@ -289,6 +312,7 @@ await prepareSandbox();
 server.listen(PORT, HOST, () => {
   console.log(`learning-coach UI  ->  ${URL_}`);
   console.log(`  domain ${DOMAIN}  ·  data ${DATA_ROOT}${SANDBOX ? "  (SANDBOX: throwaway practice data)" : ""}`);
+  console.log(`  learners ${listLearners().map((l) => l.name).join(", ")}`);
   console.log(`  skill  ${SKILL_DIR}`);
   console.log(`  claude ${CLAUDE_BIN || "NOT FOUND (set CLAUDE_BIN)"}`);
   console.log("  Close this window (or press Ctrl+C) to stop.");

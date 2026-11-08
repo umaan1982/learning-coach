@@ -5,7 +5,8 @@ import { execFileSync, spawn } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { DATA_ROOT, DOMAIN, DOMAIN_DIR, SKILL_DIR } from "./config.js";
+import { DATA_ROOT, DOMAIN, SANDBOX, SKILL_DIR } from "./config.js";
+import { listLearners } from "./learners.js";
 
 const isWin = process.platform === "win32";
 
@@ -53,24 +54,24 @@ export const CLAUDE_BIN = findClaude();
 const STRIP = /^(ANTHROPIC_API_KEY|ANTHROPIC_AUTH_TOKEN|ANTHROPIC_BASE_URL|CLAUDECODE|CLAUDE_PID|CLAUDE_EFFORT|CLAUDE_AGENT_SDK_.*|CLAUDE_CODE_.*)$/;
 const KEEP = new Set(["CLAUDE_CODE_OAUTH_TOKEN", "CLAUDE_CODE_GIT_BASH_PATH"]);
 
-export function childEnv() {
+export function childEnv(dataRoot = DATA_ROOT) {
   const env = {};
   for (const [k, v] of Object.entries(process.env)) {
     if (STRIP.test(k) && !KEEP.has(k)) continue; // no API keys; no leftovers from a parent Claude session
     env[k] = v;
   }
-  env.LEARNING_COACH_DATA = DATA_ROOT;
+  env.LEARNING_COACH_DATA = dataRoot;
   return env;
 }
 
-function spawnClaude(args) {
+function spawnClaude(args, dataRoot) {
   // .cmd shims (npm installs) need a shell on Windows; our args are fixed strings without
   // shell metacharacters, and the learner's text goes through stdin, never the command line.
   const shell = isWin && /\.cmd$/i.test(CLAUDE_BIN);
   const argv = shell ? args.map((a) => (/[\s()*]/.test(a) ? `"${a}"` : a)) : args;
   return spawn(shell ? `"${CLAUDE_BIN}"` : CLAUDE_BIN, argv, {
-    cwd: DATA_ROOT,
-    env: childEnv(),
+    cwd: dataRoot,
+    env: childEnv(dataRoot),
     shell,
     windowsHide: true,
   });
@@ -121,8 +122,9 @@ const NOT_LOGGED_IN = /not logged in|please run \/login|invalid api key|oauth to
 // ---------------------------------------------------------------- one chat turn
 // Kept deliberately small: it says *where* the coach is running, not *how* to coach.
 // The coaching process stays in SKILL.md and references/.
-const APPEND_SYSTEM_PROMPT =
+const systemPrompt = (ctx) =>
   `The learner is talking to you through a local desktop web UI for the learning-coach skill. ` +
+  `This learner is ${ctx.learner.name}; other people may use the same UI with their own, separate data. ` +
   `For every learner message, follow the learning-coach skill (domain: ${DOMAIN}); its process and message style apply unchanged. ` +
   `The UI has its own panels for the C-test, listening audio, course status and the progress dashboard, which run the skill's scripts directly. ` +
   `There is no clickable-choice tool here, so offer numbered options instead. ` +
@@ -137,8 +139,8 @@ const APPEND_SYSTEM_PROMPT =
   `then read the result with ctest.py result and continue. ` +
   // Configuration, not coaching: where this session's files are. Without it the model
   // falls back to the skill's default ~/learning-coach-data, even when the UI runs on sandbox data.
-  `Learner data for this session is in ${DOMAIN_DIR}; read and write learner files only there. ` +
-  `LEARNING_COACH_DATA is already set to ${DATA_ROOT} in the environment, so run the scripts without setting it. ` +
+  `Learner data for this session is in ${ctx.domainDir}; read and write learner files only there. ` +
+  `LEARNING_COACH_DATA is already set to ${ctx.dataRoot} in the environment, so run the scripts without setting it. ` +
   `The skill is at ${SKILL_DIR}; run its scripts as python "${path.join(SKILL_DIR, "scripts")}${path.sep}<name>.py" ...` +
   // Headless: anything outside the allow list is denied, and combined shell commands never match it.
   ` Use the Read, Glob and Grep tools to look at files. Use the shell only for single python script calls, ` +
@@ -153,17 +155,31 @@ const ALLOWED_TOOLS = [
   "PowerShell(python *)", "PowerShell(py *)", "PowerShell(Get-ChildItem *)", "PowerShell(Get-Content *)",
 ];
 
-// Sandbox / temp data: hard-block the real data folder, whatever the model decides.
-const REAL_DATA = path.join(os.homedir(), "learning-coach-data");
-const DENIED_TOOLS =
-  path.resolve(DATA_ROOT).toLowerCase() === path.resolve(REAL_DATA).toLowerCase()
-    ? []
-    : ["Read(~/learning-coach-data/**)", "Edit(~/learning-coach-data/**)", "Write(~/learning-coach-data/**)"];
+// Privacy between learners, and sandbox safety: every learner folder except this one's is
+// blocked at the tool level, whatever the model decides. Rules use home-relative paths (~/...),
+// the form Claude Code's permission rules handle reliably on every OS.
+function homeRule(dir) {
+  const rel = path.relative(os.homedir(), dir);
+  if (!rel || rel.startsWith("..") || path.isAbsolute(rel)) return null;
+  return `~/${rel.split(path.sep).join("/")}/**`;
+}
+export function deniedTools(ctx) {
+  const roots = listLearners().map((l) => l.root);
+  if (SANDBOX) roots.push(path.join(os.homedir(), "learning-coach-data"), path.join(os.homedir(), "learning-coach-profiles"));
+  const self = path.resolve(ctx.dataRoot).toLowerCase();
+  const rules = [];
+  for (const r of new Set(roots.map((x) => path.resolve(x)))) {
+    const low = r.toLowerCase();
+    if (low === self || self.startsWith(low + path.sep)) continue; // never block this learner's own folder
+    const rule = homeRule(r);
+    if (rule) rules.push(`Read(${rule})`, `Edit(${rule})`, `Write(${rule})`);
+  }
+  return rules;
+}
 
 // speak.py writes to <data>/<domain>/audio/<stamp>-<mode>.mp3. Match the file name only
 // (full paths contain spaces, e.g. C:\Users\John Doe\...) and look it up in that folder.
 const MP3_NAME = /[\w.-]+\.mp3\b/gi;
-const AUDIO_DIR = path.join(DOMAIN_DIR, "audio");
 
 /**
  * Run one learner message through `claude -p`, resuming `sessionId` if given.
@@ -172,12 +188,13 @@ const AUDIO_DIR = path.join(DOMAIN_DIR, "audio");
  *   {type:"tool", name, detail} {type:"audio", path} {type:"done", ok, error, sessionId, durationMs}
  * Returns a function that aborts the turn.
  */
-export function runTurn({ message, sessionId, model }, emit) {
+export function runTurn({ message, sessionId, model, ctx }, emit) {
   if (!CLAUDE_BIN) {
     emit({ type: "done", ok: false, error: "Claude Code CLI not found. Install it, or set CLAUDE_BIN." });
     return () => {};
   }
-  fs.mkdirSync(DATA_ROOT, { recursive: true });
+  fs.mkdirSync(ctx.dataRoot, { recursive: true });
+  const AUDIO_DIR = path.join(ctx.domainDir, "audio");
   const args = [
     "-p",
     "--output-format", "stream-json",
@@ -186,14 +203,14 @@ export function runTurn({ message, sessionId, model }, emit) {
     "--permission-mode", "acceptEdits",
     "--permission-prompts", "none",
     "--add-dir", SKILL_DIR,
-    "--append-system-prompt", APPEND_SYSTEM_PROMPT,
-    "--disallowedTools", "AskUserQuestion", ...DENIED_TOOLS,
+    "--append-system-prompt", systemPrompt(ctx),
+    "--disallowedTools", "AskUserQuestion", ...deniedTools(ctx),
     "--allowedTools", ...ALLOWED_TOOLS,
   ];
   if (sessionId) args.push("--resume", sessionId);
   if (model || process.env.LC_MODEL) args.push("--model", model || process.env.LC_MODEL);
 
-  const child = spawnClaude(args);
+  const child = spawnClaude(args, ctx.dataRoot);
   child.stdin.end(message, "utf8");
 
   let buf = "";

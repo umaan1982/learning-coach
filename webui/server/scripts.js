@@ -6,11 +6,12 @@ import { DATA_ROOT, DOMAIN, PYTHON, SCRIPTS_DIR } from "./config.js";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 
-function runPython(file, args, { timeoutMs = 60_000, cwd = SCRIPTS_DIR } = {}) {
+// dataRoot: the current learner's folder (see learners.js); every script reads LEARNING_COACH_DATA.
+function runPython(file, args, { timeoutMs = 60_000, cwd = SCRIPTS_DIR, dataRoot = DATA_ROOT } = {}) {
   return new Promise((resolve) => {
     const child = spawn(PYTHON, [file, ...args], {
       cwd,
-      env: { ...process.env, LEARNING_COACH_DATA: DATA_ROOT, PYTHONIOENCODING: "utf-8", PYTHONUTF8: "1" },
+      env: { ...process.env, LEARNING_COACH_DATA: dataRoot, PYTHONIOENCODING: "utf-8", PYTHONUTF8: "1" },
       windowsHide: true,
     });
     let stdout = "";

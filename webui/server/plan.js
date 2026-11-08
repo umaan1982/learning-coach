@@ -3,7 +3,7 @@
 // it only shows the structure the skill already defines.
 import fs from "node:fs";
 import path from "node:path";
-import { DOMAIN, DOMAIN_DIR, SKILL_DIR } from "./config.js";
+import { DOMAIN, SKILL_DIR } from "./config.js";
 import { parseCourseStatus } from "./course.js";
 import { runScript } from "./scripts.js";
 
@@ -67,7 +67,8 @@ function csvRows(p) {
   return read(p).split(/\r?\n/).slice(1).filter((l) => l.trim());
 }
 
-export async function planState(ctest) {
+export async function planState(ctx, ctest) {
+  const DOMAIN_DIR = ctx.domainDir;
   const profile = frontMatter(read(path.join(DOMAIN_DIR, "profile.md")));
   const notes = path.join(DOMAIN_DIR, "notes");
   const noteFiles = fs.existsSync(notes) ? fs.readdirSync(notes) : [];
@@ -78,8 +79,8 @@ export async function planState(ctest) {
   const lastSession = sessions.length ? sessions.at(-1).split(",")[0] : null;
 
   const [status, schedule] = await Promise.all([
-    runScript("course.py", ["status", "--domain", DOMAIN]),
-    runScript("course.py", ["schedule", "--domain", DOMAIN]),
+    runScript("course.py", ["status", "--domain", DOMAIN], { dataRoot: ctx.dataRoot }),
+    runScript("course.py", ["schedule", "--domain", DOMAIN], { dataRoot: ctx.dataRoot }),
   ]);
 
   // Done = every text scored, or stopped early after text 1 (< 30%, placement rule).

@@ -10,6 +10,7 @@ webui/
   server/course.js   turns `course.py status` text into fields (raw text kept as fallback)
   server/plan.js     the Plan tab's data: profile, placement state, `course.py status` + `schedule`, module names
   server/transcribe.py  offline dictation for the mic button (faster-whisper, same model as pronounce.py)
+  server/learners.js several learners on one computer: registry + each learner's data folder
   src/components/    our components: Chat, Plan, CTest, Listen, Dashboard, LoginNotice
   src/components/ui/ shadcn/ui primitives (Radix + Tailwind v4, "Nova" preset, Lucide icons)
 ```
@@ -68,6 +69,20 @@ There is no one to answer permission prompts in headless mode, so anything not a
 Inputs have spell-check and autocorrect off, so the browser can't give away answers.
 
 **The plan and the exam date.** The schedule is recomputed from `profile.md` (start date, exam date, `unit_weeks`) every time the Plan tab loads and after every coach reply. A later exam date adds spare weeks; the pace stays at one unit per week by design. An earlier date doesn't compress the plan by itself: the Plan tab shows **"Doesn't fit before the exam"** with the options (shorter units in Module 1, testing out of units), and the coach decides with you.
+
+## Several learners (profiles)
+
+Pick who's learning in the header (avatar menu): switch, **Add learner…**, **Rename…**. Each learner has a completely separate data folder, so profile, placement, mistakes, course progress, recordings and chat sessions never mix:
+
+| Learner | Data folder |
+|---|---|
+| the first one (created automatically, named after your Windows user) | `~/learning-coach-data` (unchanged; also what the Claude app uses) |
+| everyone you add | `~/learning-coach-profiles/<name>/` |
+| list of learners | `~/learning-coach-profiles/learners.json` |
+
+How it works: the page stores the choice in a cookie, and the server runs every script and every `claude -p` turn with `LEARNING_COACH_DATA` set to that learner's folder (cwd and the session prompt too, which also names the learner). The skill itself is unchanged. **Privacy:** every other learner's folder is blocked for the coach with Read/Edit/Write deny rules, so one person's session can't open the other's files (tested). A new learner starts from the skill's templates (`init_learner.py`) and goes through setup and placement on their own.
+
+Shared between learners: the Claude subscription (and its usage limits), the browser, and Anki. In Anki, give each person their own Anki profile or deck (the coach asks for the deck name during setup). The sandbox has its own separate list of learners.
 
 ## Not logged in
 

@@ -41,6 +41,12 @@ export const DATA_ROOT = longPath(
 );
 export const DOMAIN_DIR = path.join(DATA_ROOT, DOMAIN);
 
+// Learner profiles. DATA_ROOT above belongs to the first ("default") learner and never moves;
+// each extra learner gets a folder of their own here, plus learners.json listing everyone.
+export const PROFILES_DIR = longPath(
+  SANDBOX ? `${DATA_ROOT}-profiles` : path.join(os.homedir(), "learning-coach-profiles"),
+);
+
 /** True if `p` resolves to a path inside `root` (no `..` escapes). */
 export function isInside(root, p) {
   const rel = path.relative(path.resolve(root), path.resolve(p));

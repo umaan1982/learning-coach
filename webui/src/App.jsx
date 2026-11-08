@@ -10,6 +10,7 @@ import Chat from "@/components/Chat.jsx";
 import CTest from "@/components/CTest.jsx";
 import Dashboard from "@/components/Dashboard.jsx";
 import Listen from "@/components/Listen.jsx";
+import LearnerSwitcher from "@/components/LearnerSwitcher.jsx";
 import LoginNotice from "@/components/LoginNotice.jsx";
 import Plan, { nextAction } from "@/components/Plan.jsx";
 import { cn } from "@/lib/utils";
@@ -111,6 +112,7 @@ export default function App() {
           </span>
           Learning coach
         </div>
+        <LearnerSwitcher learner={info.learner} learners={info.learners} />
         <Badge variant="secondary">{info.domain}</Badge>
         {info.sandbox && (
           <Tooltip>
