@@ -1,5 +1,5 @@
 import { Component, useEffect, useRef, useState } from "react";
-import { BarChart3, BookOpen, GraduationCap, Headphones, Maximize2, Minimize2, PenLine } from "lucide-react";
+import { BarChart3, GraduationCap, Headphones, Map, Maximize2, Minimize2, PenLine } from "lucide-react";
 import { api } from "@/api.js";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -7,15 +7,15 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import Chat from "@/components/Chat.jsx";
-import Course from "@/components/Course.jsx";
 import CTest from "@/components/CTest.jsx";
 import Dashboard from "@/components/Dashboard.jsx";
 import Listen from "@/components/Listen.jsx";
 import LoginNotice from "@/components/LoginNotice.jsx";
+import Plan, { nextAction } from "@/components/Plan.jsx";
 import { cn } from "@/lib/utils";
 
 const TABS = [
-  { id: "course", label: "Course", icon: BookOpen },
+  { id: "plan", label: "Plan", icon: Map },
   { id: "ctest", label: "C-test", icon: PenLine },
   { id: "listen", label: "Listen", icon: Headphones },
   { id: "progress", label: "Progress", icon: BarChart3 },
@@ -64,15 +64,36 @@ function ClaudeStatus({ c }) {
 export default function App() {
   const [info, setInfo] = useState(null);
   const [err, setErr] = useState(null);
-  const [tab, setTab] = useState(() => localStorage.getItem("lc-tab") || "course");
+  const [tab, setTab] = useState(() => {
+    const t = localStorage.getItem("lc-tab");
+    return TABS.some((x) => x.id === t) ? t : "plan";
+  });
   const [wide, setWide] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [plan, setPlan] = useState(null);
+  const [planErr, setPlanErr] = useState(null);
+  const [planLoading, setPlanLoading] = useState(false);
   const sendRef = useRef(() => {});
 
   const recheck = () => api.info().then(setInfo).catch((e) => setErr(e.message));
+  // The plan is re-read after every coach turn, so it reflects what the coach just saved.
+  const loadPlan = () => {
+    setPlanLoading(true);
+    api
+      .plan()
+      .then((p) => {
+        setPlan(p);
+        setPlanErr(null);
+      })
+      .catch((e) => setPlanErr(e.message))
+      .finally(() => setPlanLoading(false));
+  };
   useEffect(() => {
     recheck();
   }, []);
+  useEffect(() => {
+    loadPlan();
+  }, [refreshKey]);
   useEffect(() => {
     localStorage.setItem("lc-tab", tab);
   }, [tab]);
@@ -124,7 +145,14 @@ export default function App() {
         )}
       >
         <Boundary name="Chat">
-          <Chat info={info} sendRef={sendRef} onRecheck={recheck} onAuthProblem={recheck} />
+          <Chat
+            info={info}
+            sendRef={sendRef}
+            onRecheck={recheck}
+            onAuthProblem={recheck}
+            next={nextAction(plan)}
+            onTurnDone={() => setRefreshKey((k) => k + 1)}
+          />
         </Boundary>
 
         <aside className="flex min-h-0 flex-col border-l bg-muted/30">
@@ -151,8 +179,15 @@ export default function App() {
             </div>
             <div className="min-h-0 flex-1 overflow-y-auto">
               <Boundary name={tab} key={tab}>
-                <TabsContent value="course" className="m-0">
-                  <Course refreshKey={refreshKey} />
+                <TabsContent value="plan" className="m-0">
+                  <Plan
+                    plan={plan}
+                    error={planErr}
+                    reload={loadPlan}
+                    loading={planLoading}
+                    onSend={(m) => sendRef.current(m)}
+                    openTab={setTab}
+                  />
                 </TabsContent>
                 <TabsContent value="ctest" className="m-0">
                   <CTest
@@ -165,7 +200,7 @@ export default function App() {
                 <TabsContent value="listen" className="m-0">
                   <Listen />
                 </TabsContent>
-                <TabsContent value="progress" className="m-0 h-full">
+                <TabsContent value="progress" className="m-0">
                   <Dashboard refreshKey={refreshKey} />
                 </TabsContent>
               </Boundary>

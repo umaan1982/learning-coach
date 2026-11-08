@@ -9,6 +9,7 @@ import path from "node:path";
 import { CLAUDE_BIN, claudeStatus, ensureLoggedIn, runTurn } from "./claude.js";
 import { DATA_ROOT, DOMAIN, DOMAIN_DIR, HOST, PORT, PROD, SANDBOX, SKILL_DIR, WEBUI_DIR, isInside } from "./config.js";
 import { parseCourseStatus } from "./course.js";
+import { planState } from "./plan.js";
 import { runScript } from "./scripts.js";
 
 // ---------------------------------------------------------------- helpers
@@ -83,6 +84,8 @@ const routes = {
     if (r.code !== 0) return { ok: false, text: r.stderr || r.stdout };
     return { ok: true, text: r.stdout, ...parseCourseStatus(r.stdout) };
   },
+
+  "GET /api/plan": async () => planState(ctestState()),
 
   "GET /api/ctest": async () => ctestState(),
 

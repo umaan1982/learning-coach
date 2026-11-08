@@ -127,11 +127,18 @@ const APPEND_SYSTEM_PROMPT =
   `The UI has its own panels for the C-test, listening audio, course status and the progress dashboard, which run the skill's scripts directly. ` +
   `There is no clickable-choice tool here, so offer numbered options instead. ` +
   `Audio made with speak.py appears as a player in the chat automatically. ` +
+  // Same C-test items, same script and scoring; only the place where the learner types changes.
+  `When a placement reaches the C-test, don't paste the texts into the chat: if today's C-test isn't done yet, ` +
+  `ask the learner to do it in the UI's C-test tab (it runs ctest.py make/show/score) and to tell you when they're done; ` +
+  `then read the result with ctest.py result and continue. ` +
   // Configuration, not coaching: where this session's files are. Without it the model
   // falls back to the skill's default ~/learning-coach-data, even when the UI runs on sandbox data.
   `Learner data for this session is in ${DOMAIN_DIR}; read and write learner files only there. ` +
   `LEARNING_COACH_DATA is already set to ${DATA_ROOT} in the environment, so run the scripts without setting it. ` +
-  `The skill is at ${SKILL_DIR}; run its scripts as python "${path.join(SKILL_DIR, "scripts")}${path.sep}<name>.py" ...`;
+  `The skill is at ${SKILL_DIR}; run its scripts as python "${path.join(SKILL_DIR, "scripts")}${path.sep}<name>.py" ...` +
+  // Headless: anything outside the allow list is denied, and combined shell commands never match it.
+  ` Use the Read, Glob and Grep tools to look at files. Use the shell only for single python script calls, ` +
+  `one command per call, without variables or chained commands.`;
 
 const ALLOWED_TOOLS = [
   "Skill", "Read", "Glob", "Grep", "Write", "Edit",

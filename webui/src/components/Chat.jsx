@@ -87,7 +87,7 @@ function Steps({ items, running }) {
 
 const SUGGESTIONS = ["lernen", "I have 20 minutes", "Where am I in the course?", "Continue the placement"];
 
-export default function Chat({ info, sendRef, onRecheck, onAuthProblem }) {
+export default function Chat({ info, sendRef, onRecheck, onAuthProblem, next, onTurnDone }) {
   const scope = `${info.domain}|${info.dataRoot}`;
   const [turns, setTurns] = usePersisted(`lc-turns|${scope}`, []);
   const [sessionId, setSessionId] = usePersisted(`lc-session|${scope}`, null);
@@ -136,6 +136,7 @@ export default function Chat({ info, sendRef, onRecheck, onAuthProblem }) {
           onAuthProblem?.();
         }
         setBusy(false);
+        onTurnDone?.();
       } else updateLast((t) => appendEvent(t, ev));
     });
   }
@@ -204,11 +205,20 @@ export default function Chat({ info, sendRef, onRecheck, onAuthProblem }) {
                 <GraduationCap className="size-6" />
               </span>
               <div>
-                <div className="text-lg font-semibold">What do you want to do?</div>
-                <div className="text-sm text-muted-foreground">Talk to the coach like in the Claude app, or pick one:</div>
+                <div className="text-lg font-semibold">{next ? next.title : "What do you want to do?"}</div>
+                <div className="mx-auto max-w-md text-sm text-muted-foreground">
+                  {next ? next.body : "Talk to the coach like in the Claude app, or pick one:"}
+                </div>
               </div>
+              {next && (
+                <Button size="lg" onClick={() => send(next.message)} disabled={busy}>
+                  {next.label}
+                  <SendHorizontal />
+                </Button>
+              )}
               <div className="flex flex-wrap justify-center gap-2">
-                {SUGGESTIONS.map((s) => (
+                {next && <span className="w-full text-xs text-muted-foreground">or</span>}
+                {SUGGESTIONS.filter((s) => s !== next?.message).map((s) => (
                   <Button key={s} variant="outline" size="sm" className="rounded-full" onClick={() => send(s)} disabled={busy}>
                     {s}
                   </Button>

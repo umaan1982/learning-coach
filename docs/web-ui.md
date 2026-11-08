@@ -7,8 +7,9 @@ webui/
   server/index.js    local HTTP server, bound to 127.0.0.1 (rejects other Host/Origin headers)
   server/claude.js   drives the local Claude Code CLI
   server/scripts.js  runs the skill's Python scripts (no AI)
-  server/course.js   turns `course.py status` text into fields for the Course card (raw text kept as fallback)
-  src/components/    our components: Chat, Course, CTest, Listen, Dashboard, LoginNotice
+  server/course.js   turns `course.py status` text into fields (raw text kept as fallback)
+  server/plan.js     the Plan tab's data: profile, placement state, `course.py status` + `schedule`, module names
+  src/components/    our components: Chat, Plan, CTest, Listen, Dashboard, LoginNotice
   src/components/ui/ shadcn/ui primitives (Radix + Tailwind v4, "Nova" preset, Lucide icons)
 ```
 
@@ -50,7 +51,7 @@ There is no one to answer permission prompts in headless mode, so anything not a
 - **Subscription only:** `ANTHROPIC_API_KEY`, `ANTHROPIC_AUTH_TOKEN`, `ANTHROPIC_BASE_URL` and leftover `CLAUDE_CODE_*` variables are removed from the child environment. The CLI must be logged in with `claude auth login` (or `CLAUDE_CODE_OAUTH_TOKEN` from `claude setup-token`).
 - CLI lookup: `CLAUDE_BIN`, then `PATH`, then `~/.local/bin`, then the copy the Claude desktop app keeps under `%APPDATA%\Claude\claude-code\<version>\`.
 - stream-json events are normalised to NDJSON for the browser: text deltas, tool-use lines, audio, and a final `done`. Audio: MP3 file names in `speak.py` output or the coach's text that exist in `<data>/<domain>/audio/` become players in the chat.
-- The appended system prompt only covers the setting: the web UI, no clickable-choice buttons, audio shows inline, where the data and scripts are. SKILL.md stays the single source of truth for the coaching process. Claude Code records this prompt when a session starts, so changes apply to new sessions only.
+- The appended system prompt only covers the setting: the web UI, no clickable-choice buttons, audio shows inline, the C-test is done in the C-test tab (same items, script and scoring; only where you type changes), where the data and scripts are, and to call scripts one at a time (combined shell commands can't be allowed headless). SKILL.md stays the single source of truth for the coaching process. Claude Code records this prompt when a session starts, so changes apply to new sessions only.
 
 ## Structured components vs chat
 
@@ -59,7 +60,7 @@ There is no one to answer permission prompts in headless mode, so anything not a
 | Lessons, recall, hints, feedback, writing, placement sections B/C | **Chat** | Attempt-first, hint-before-answer and focus-mode messages are the skill's job; the UI only renders Markdown. |
 | C-test | **Panel**, `ctest.py make/show/score/result` | An input per gap is far easier than typing `1 ung 2 im …`. The server never sends the answer key; no misses or per-text scores until the end (placement stays neutral); stop early if text 1 < 30% (placement.md). "Hand back to the coach" tells the chat to read `ctest.py result` and continue. |
 | Listening audio | **Panel**, `speak.py say` + players inline in chat for the coach's own MP3s | |
-| Course status | **Panel**, `course.py status` | |
+| Plan (guide) | **Panel**: profile, `notes/placement-*.md`, `placement.md` sections, `course.py status` + `schedule`, `course.md` module names | Shows *what's next* (setup → placement → today's lesson) with one button that starts it in the chat, your path, what the placement contains, the current unit and the full week-by-week schedule. The same "next step" is the main button on the chat's start screen. It re-reads after every coach reply. |
 | Progress | **Panel**, `dashboard.py` page in an iframe | |
 
 Inputs have spell-check and autocorrect off, so the browser can't give away answers.

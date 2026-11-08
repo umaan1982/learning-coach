@@ -13,6 +13,7 @@ async function req(method, url, body) {
 export const api = {
   info: () => req("GET", "/api/info"),
   course: () => req("GET", "/api/course"),
+  plan: () => req("GET", "/api/plan"),
   ctest: () => req("GET", "/api/ctest"),
   ctestMake: () => req("POST", "/api/ctest/make"),
   ctestText: (n) => req("GET", `/api/ctest/text?n=${n}`),
