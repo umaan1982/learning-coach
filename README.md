@@ -76,7 +76,7 @@ Then just talk to it ("let's study", "set me up for my exam"), or call it with `
 
 **Use from your phone:** start the session on your computer and turn on Remote Control. Then open the Claude app → **Code** and continue there. Your computer has to stay on.
 
-**Desktop web UI (optional, prototype):** a local page with the coach's chat on the left and tools on the right: a C-test with one input box per gap, an audio maker, course status and the progress dashboard. It drives your locally installed Claude Code CLI, so it runs on your Claude subscription. There's no API key and no hosting, and it's only reachable from your own computer (127.0.0.1). The coaching itself is unchanged: the chat runs this same skill.
+**Desktop web UI (optional, prototype; React + shadcn/ui):** a local page with the coach's chat on the left and tools on the right: a C-test with one input box per gap, an audio maker, course status and the progress dashboard. It drives your locally installed Claude Code CLI, so it runs on your Claude subscription. There's no API key and no hosting, and it's only reachable from your own computer (127.0.0.1). The coaching itself is unchanged: the chat runs this same skill.
 - Needs [Node.js](https://nodejs.org) 20+ and the Claude Code CLI, signed in once with `claude auth login`.
 - Windows: double-click **`start-ui.cmd`**, or run `start-ui.cmd sandbox` to try it on throwaway practice data (your real data is blocked in that mode). It installs what it needs on first run and opens the page in your default browser.
 - macOS/Linux: `cd webui && npm install && npm run dev` (or `npm run dev:sandbox`), then open http://127.0.0.1:5178.

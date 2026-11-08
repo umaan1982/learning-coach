@@ -11,9 +11,11 @@ where node >nul 2>nul || (
   pause & exit /b 1
 )
 
-rem First run (or after deleting webui\node_modules): install the packages.
-if not exist node_modules\.package-lock.json (
-  echo Installing packages ^(first run, about a minute^)...
+rem Install the packages on first run, and again whenever package-lock.json is newer than
+rem the installed set (e.g. after a git pull that added packages).
+node -e "const f=require('fs'),t=p=>{try{return f.statSync(p).mtimeMs}catch{return 0}};process.exit(t('package-lock.json')>t('node_modules/.package-lock.json')?1:0)"
+if errorlevel 1 (
+  echo Installing packages ^(about a minute^)...
   call npm.cmd install --no-fund --no-audit || (echo npm install failed. & pause & exit /b 1)
 )
 

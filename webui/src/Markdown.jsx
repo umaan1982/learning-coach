@@ -68,6 +68,14 @@ export default function Markdown({ text }) {
       i++;
     } else if (!line.trim()) {
       i++;
+    } else if (/^\s*<(sub|small)>.*<\/\1>\s*$/i.test(line)) {
+      // The coach writes side notes as <sub>…</sub>: show them small and muted (as text, never as HTML).
+      blocks.push(
+        <p key={k} className="text-xs text-muted-foreground">
+          {inline(line.replace(/^\s*<(sub|small)>|<\/(sub|small)>\s*$/gi, ""))}
+        </p>,
+      );
+      i++;
     } else {
       const body = [];
       while (i < lines.length && lines[i].trim() && !/^(\s*[>|]|\s*[-*•]\s|\s*\d+[.)]\s|```|#{1,6}\s)/.test(lines[i])) body.push(lines[i++]);
