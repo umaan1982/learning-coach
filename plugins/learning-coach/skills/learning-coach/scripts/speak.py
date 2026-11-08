@@ -11,7 +11,7 @@ Commands
 Options
   --out PATH        output file (default: <data>/<domain>/audio/<timestamp>-<mode>.mp3)
   --domain ID       domain for the default output folder (default: german-b1)
-  --lang de-DE      language/locale of the voices (default: de-DE)
+  --lang LOCALE     voice locale (default: the domain's tts_lang, e.g. de-DE, en-US)
   --voice NAME      override the main voice (e.g. de-DE-KatjaNeural)
   --speed slow|normal|both   'both' = slow version, then normal version in one file
   --repeat N        play the whole thing N times (e.g. 2 for exam-style "twice")
@@ -28,7 +28,7 @@ import sys
 import tempfile
 from pathlib import Path
 
-from _common import domain_dir
+from _common import domain_dir, domain_settings
 
 VOICES = {  # (voice A, voice B)
     "de-DE": ("de-DE-KatjaNeural", "de-DE-ConradNeural"),
@@ -88,12 +88,15 @@ def main() -> int:
     for p in (s, d):
         p.add_argument("--out")
         p.add_argument("--domain", default="german-b1")
-        p.add_argument("--lang", default="de-DE")
+        p.add_argument("--lang", help="voice locale, e.g. de-DE, en-US (default: the domain's tts_lang)")
         p.add_argument("--voice")
         p.add_argument("--speed", choices=["slow", "normal", "both"], default="normal")
         p.add_argument("--repeat", type=int, default=1)
     a = ap.parse_args()
 
+    a.lang = a.lang or domain_settings(a.domain).get("tts_lang") or "de-DE"
+    if a.lang not in VOICES:
+        print(f"no voices configured for {a.lang}; using de-DE", file=sys.stderr)
     va, vb = VOICES.get(a.lang, VOICES["de-DE"])
     if a.voice:
         va = a.voice

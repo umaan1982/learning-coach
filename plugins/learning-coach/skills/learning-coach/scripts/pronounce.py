@@ -6,7 +6,7 @@ the model downloads once, ~460 MB for 'small') and compares what it heard with
 the target sentence, word by word.
 
 Usage
-  python pronounce.py --audio rec.m4a --target "Das Wetter war schön." [--model small] [--lang de] [--json]
+  python pronounce.py --audio rec.m4a --target "Das Wetter war schön." [--domain german-b1] [--model small] [--lang de] [--json]
 
 Reports
   intelligibility  % of target words recognised clearly (the ASR heard them, confidence >= 0.6)
@@ -22,13 +22,16 @@ import difflib
 import json
 import re
 import sys
+import unicodedata
 
 CLEAR = 0.6   # word probability above which a word counts as clearly heard
 PAUSE = 0.4   # seconds of silence between words that counts as a pause
 
 
 def norm(text):
-    return [w for w in re.sub(r"[^\wäöüß'-]+", " ", text.lower()).split() if w]
+    """Lower-case, normalise Unicode (NFC) and drop punctuation."""
+    text = unicodedata.normalize("NFC", text.lower())
+    return [w for w in re.sub(r"[^\w'-]+", " ", text).split() if w]
 
 
 def load_audio(path, rate=16000):
@@ -125,13 +128,18 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--audio", required=True)
     ap.add_argument("--target", required=True)
-    ap.add_argument("--model", default="small", help="tiny|base|small|medium (bigger = slower, more accurate)")
-    ap.add_argument("--lang", default="de")
+    ap.add_argument("--domain", help="use this domain's defaults (asr_lang, asr_model)")
+    ap.add_argument("--model", help="tiny|base|small|medium|large-v3 (default: domain asr_model or small)")
+    ap.add_argument("--lang", help="recognition language, e.g. de, fr (default: domain asr_lang or de)")
     ap.add_argument("--json", action="store_true")
     ap.add_argument("--log", metavar="DOMAIN", help="append the result to <data>/<DOMAIN>/pronunciation.csv")
     a = ap.parse_args()
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8")
+    from _common import domain_settings
+    ds = domain_settings(a.domain or a.log or "") if (a.domain or a.log) else {}
+    a.lang = a.lang or ds.get("asr_lang") or "de"
+    a.model = a.model or ds.get("asr_model") or "small"
 
     heard, audio = transcribe(a.audio, a.model, a.lang)
     report, extra = compare(a.target, heard)

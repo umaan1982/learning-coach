@@ -15,6 +15,7 @@ anki_deck: Deutsch B1
 desired_retention: 0.90
 level_estimate: not yet placed
 reading_mode: focus
+unit_weeks: 1          # course pace: 1 = a unit per week, 2 = every two weeks, 0.6 = three days
 ---
 
 ## Slots
@@ -54,6 +55,10 @@ date,skill,pattern,wrong,correct,source,resolved
 - `placement-YYYY-MM-DD.md`: results per section, level estimates, top gaps, the plan.
 - `mock-YYYY-MM-DD.md`: section, raw score, scaled score, criteria notes, comparison with previous mocks.
 - `voice-YYYY-MM-DD.md`: raw pasted voice-chat reports.
+- `ctest-YYYY-MM-DD.json`: a generated C-test with its key and the learner's scored answers (written by `ctest.py`). Don't paste the key into the chat.
+
+## benchmarks.csv
+External placement or exam results next to our own estimate, so the placement can be calibrated: `date,source,result,our_estimate,notes` (e.g. `2026-11-10,Goethe online placement,B1.1,A2.2,taken on phone`).
 
 ## course-progress.csv
 Written by `course.py`: `unit,status,started,checked,score,attempts,notes`. Status is `current`, `passed`, `corrected` (passed with gaps carried forward) or `tested-out`.

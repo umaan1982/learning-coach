@@ -7,6 +7,7 @@ anki_deck:
 desired_retention: 0.90
 level_estimate: not yet placed
 reading_mode: focus
+unit_weeks: 1
 ---
 
 ## Slots

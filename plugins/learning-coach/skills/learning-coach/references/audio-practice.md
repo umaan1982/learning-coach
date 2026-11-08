@@ -13,7 +13,7 @@ How the coach practises **listening** (it reads German aloud by generating audio
 
 ## How audio reaches the learner
 1. **Generate** with `scripts/speak.py` (needs `pip install edge-tts` and internet):
-   - one sentence or text: `python scripts/speak.py say "<German text>" --speed both`
+   - one sentence or text: `python scripts/speak.py say "<text>" --domain <id> --speed both` (the voice language comes from the domain's `tts_lang`)
    - a conversation: write `A: … / B: …` lines to a file, then `python scripts/speak.py dialogue <file> [--repeat 2]`. Two different voices, like the exam.
    - `--speed slow|normal|both`. `both` plays a slow version, then the normal version.
    - Files land in `<data>/audio/`. The script prints the path.

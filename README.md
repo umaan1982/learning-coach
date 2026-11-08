@@ -30,7 +30,7 @@ Units build on each other, and earlier units keep coming back in recall and in e
 | You say | The coach |
 |---------|-----------|
 | "Set me up for my exam in June" | Onboarding: goal, deadline, time slots (e.g. train 2×35 min, no speaking aloud), Anki setup |
-| (first time) | Placement test defined by the domain pack (for a language: vocabulary, grammar, reading, writing, speaking, listening), then a plan with a feasibility check |
+| (first time) | Placement modelled on how institutes place learners: self-rating, a C-test as a fast router, then targeted sections with stop and ceiling rules, a sub-level result (e.g. B1.1) and a check against a free official placement test |
 | "let's study" / "quiz me" / "I have 20 min" | Daily session: recall → learn → contrast → use it → understand → log |
 | *pastes a voice-chat mistake list* | Imports the errors into the log and creates flashcards |
 | "how am I doing?" | Progress report plus a visual dashboard (HTML, works offline, light/dark): days left, streak, minutes per day, recall accuracy vs the 80–90% target, open mistake patterns, strand mix, speech clarity |
@@ -52,7 +52,7 @@ learning-coach/                         ← Claude Code plugin marketplace
     └── skills/learning-coach/
         ├── SKILL.md                    ← the process (domain-agnostic)
         ├── references/                 ← evidence, session protocol, file formats, domain-pack spec
-        ├── scripts/                    ← init_learner, anki_connect, progress, dashboard (stdlib only);
+        ├── scripts/                    ← init_learner, anki_connect, progress, course, ctest, dashboard (stdlib only);
         │                                  speak (edge-tts), pronounce (faster-whisper)
         ├── requirements.txt            ← optional packages for audio and pronunciation
         ├── templates/                  ← learner profile + CSV templates
@@ -88,7 +88,7 @@ Learner data never lives in this repo. By default it's in `~/learning-coach-data
 
 Flashcards live in Anki.
 
-**Anki:** install Anki desktop and the [AnkiConnect](https://ankiweb.net/shared/info/2055492159) add-on (code `2055492159`). Turn on FSRS with desired retention 0.90. Review on your phone with AnkiMobile or AnkiDroid via AnkiWeb sync. When Anki isn't running, new cards are queued in `anki-import.csv`.
+**Anki:** install Anki desktop **26.09.4 or newer** (from apps.ankiweb.net only; older versions have a shared-deck security hole) and the [AnkiConnect](https://ankiweb.net/shared/info/2055492159) add-on (code `2055492159`; install no look-alike add-ons). Turn on FSRS with desired retention 0.90 and set *New cards/day* (e.g. 10). Review on your phone for free in Safari/Chrome via AnkiWeb, or with AnkiDroid (free) / AnkiMobile (paid). The coach adds a unit's cards in one batch when the unit starts, so your computer only needs to be on then; Anki releases the new cards day by day, and phone reviews work with the computer off. When Anki isn't running, new cards are queued in `anki-import.csv`.
 
 ## Domain packs
 | Pack | Goal | What's in it |
@@ -119,7 +119,7 @@ claude plugin eval . --allow-tools Write,Edit,Bash --scaffold
 ```
 
 ## Status
-v0.4.1: structured course (modules, units, lessons, unit checks, spiral review), visual progress dashboard and offline pronunciation scoring, on top of focus-mode messages, listening and speaking loops, and audio flashcards. Roadmap: phoneme-level pronunciation scoring, and a second domain to prove the engine is generic.
+v0.5.0: placement upgrade (self-rating, C-test router, sub-levels, external benchmark, typed-answer rule), structured course (modules, units, lessons, unit checks, spiral review), visual progress dashboard and offline pronunciation scoring, on top of focus-mode messages, listening and speaking loops, and audio flashcards. Roadmap: phoneme-level pronunciation scoring, and a second domain to prove the engine is generic.
 
 ## License
 [PolyForm Noncommercial 1.0.0](LICENSE) © 2026 Usman Ahmed Saeed.

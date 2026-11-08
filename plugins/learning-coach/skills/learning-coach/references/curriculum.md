@@ -40,6 +40,8 @@ One row in `course.csv`, expanded into lessons by the coach:
 - **Exam task type:** the target-format task practised in this unit.
 - **Prerequisites:** the units it builds on.
 
+**Cards arrive once per unit, not every day.** When a unit starts (`course.py start` or after a passed check), queue its core vocabulary as one batch with `anki_connect.py add`, then sync. Set the deck's *New cards/day* (e.g. 10) so Anki releases them day by day on its own. The computer only has to be on when the batch is added; reviews on the phone (AnkiWeb or a mobile app) work without it.
+
 ## 4. The lesson: the weekly lesson pattern
 A unit runs over a fixed pattern of lessons. The domain's `course.md` defines the pattern for its slots, e.g. 10 train lessons + 1 home lesson per week. Every lesson still uses the session blocks from SKILL.md §6 (recall → learn → contrast → use → understand → log), but **the unit decides the content**:
 

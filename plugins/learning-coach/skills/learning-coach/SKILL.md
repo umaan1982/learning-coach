@@ -26,7 +26,7 @@ Why this matters: the hardest part of self-study isn't content (there's plenty o
 | Learner data file formats | `references/state-files.md` |
 | How to build a new domain | `references/domain-pack-spec.md` |
 | Domain packs | `domains/<domain-id>/` (start with `domain.md`) |
-| Helper scripts | `scripts/`: `init_learner.py`, `anki_connect.py`, `progress.py`, `course.py` (where you are in the course, schedule, unit-check gate), `dashboard.py` (visual progress page), `speak.py` (German audio), `pronounce.py` (scores a voice recording) |
+| Helper scripts | `scripts/`: `init_learner.py`, `anki_connect.py`, `progress.py`, `course.py` (where you are in the course, schedule, unit-check gate), `dashboard.py` (visual progress page), `speak.py` (audio in the domain's language), `pronounce.py` (scores a voice recording), `ctest.py` (C-test: fast global placement measure) |
 | Optional Python packages | `requirements.txt` (edge-tts for audio, faster-whisper for pronunciation). Everything else is standard library. |
 
 **Learner data** lives outside the skill so the skill can be shared publicly without personal data. It sits in `~/learning-coach-data/<domain-id>/`, or in `$LEARNING_COACH_DATA/<domain-id>/` if that variable is set:
@@ -76,6 +76,7 @@ These rules are the difference between AI that helps learning and AI that harms 
 8. **Use the learner's own mistakes.** Practice targets come from `errors.csv` first and the syllabus second.
 9. **Show data, not vibes.** Learners consistently misjudge what works for them (e.g. 80% believed blocked practice beat interleaving when the reverse was true). When effort feels unproductive, show the numbers and briefly explain the "desirable difficulty".
 10. **Respect the context.** Never schedule speaking aloud in a slot marked `speak_aloud: no`, and never use audio in a slot without audio. Mobile turns should be short.
+11. **Judge spelling only from typed answers.** Voice dictation guesses: it can turn target-language words into English words, drop endings, or pick the wrong script. A dictated answer shows what was *said*, not how the learner spells. If a spoken answer looks wrong in a way that sounds like the target, treat it as a dictation artefact and ask for that one word typed. Never log a spelling, ending or script error from a dictated answer.
 
 ### Message format: focus mode (default)
 Learners read these messages on a phone, between stops, often tired or distracted. A wall of text gets skimmed, and skimmed feedback teaches nothing. So unless `profile.md` says `reading_mode: standard`, write every message in **focus mode**:
@@ -109,10 +110,14 @@ Goal: a profile good enough to run placement. Keep it to a few short questions, 
 
 Mastery learning only works if you know where the learner actually is. Self-reports like "a bit rusty" are unreliable. Use the domain's `placement.md`. It defines sections, items, stopping rules and scoring. General principles:
 
-- **Adaptive:** start easy, climb, stop a section after the domain's stop rule (e.g. 3 misses in a band). Total length should fit one slot. Split it across two slots if needed.
+- **Self-rating first.** Before any item, the learner rates themselves on the domain's can-do statements. At the end, show self-rating next to the result. Learners misjudge themselves, and seeing the gap is useful in itself.
+- **Route, then probe.** If the domain has a quick global measure (e.g. a C-test, `ctest.py`), run it first and start the skill sections around its result instead of at the bottom. Use the learner's background the same way: a near-native speaker doesn't start at A1 items.
+- **Adaptive both ways:** a **stop rule** (e.g. 3 misses in a band → stop) and a **ceiling rule** (e.g. the first 4 items of a band right → band secure, move up). Total length should fit one slot. Split it across two slots if needed.
+- **Typed answers for anything scored on form** (rule 11). Record each answer's input mode (`typed`/`spoken`).
 - **Record as you go:** append each item, the answer and its score to `notes/placement-in-progress.md`, so a placement split across train rides can resume where it stopped. When it's finished, write the result file and delete the in-progress file.
 - **No teaching during placement.** Give brief, neutral acknowledgements ("Thanks, next one"). Feedback here would contaminate the measurement. Explain this up front so it doesn't feel cold.
 - **Production over recognition.** Ask the learner to produce answers rather than pick them, so you see what they can actually use.
+- **Check against an official yardstick.** If the domain names a free external placement test, ask the learner to take it once and log both results in `benchmarks.csv`. When they differ by more than one sub-level, start at the lower one and note it for calibration.
 - **Output:** write `notes/placement-YYYY-MM-DD.md` with a level estimate per skill, the top gaps (as error-pattern tags), a vocabulary estimate if the domain has one, and the **plan**: a weekly slot allocation and phase plan to the deadline (the domain's `domain.md` has templates). Update `level_estimate` in `profile.md`.
 - **Set the course entry point:** use the domain's entry rules (`course.md`) to pick the starting unit. Mark earlier units with `course.py testout`, start the first one with `course.py start`, and show the learner the plan with `course.py schedule`.
 - **Tell the learner the result in focus mode:** level, top 3 gaps and the daily plan in a few lines. Link to the notes file for the rest.

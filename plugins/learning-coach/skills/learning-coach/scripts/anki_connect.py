@@ -63,12 +63,14 @@ def cmd_check(_):
     print(f"AnkiConnect OK (api v{v}). Decks: {', '.join(decks)}")
 
 
-def attach_audio(cards, notes, tmpdir):
+def attach_audio(cards, notes, tmpdir, domain=None):
     """Generate TTS for each card's 'say' column and attach it to the Back field."""
     import asyncio
     import hashlib
     from speak import synth, VOICES, RATE
-    voice = VOICES["de-DE"][0]
+    from _common import domain_settings
+    lang = (domain_settings(domain).get("tts_lang") if domain else None) or "de-DE"
+    voice = VOICES.get(lang, VOICES["de-DE"])[0]
     made = 0
     for c, n in zip(cards, notes):
         text = (c.get("say") or "").strip()
@@ -102,7 +104,7 @@ def cmd_add(a):
         ]
         tmp = tempfile.mkdtemp(prefix="lc-audio-")
         if a.audio:
-            print(f"audio attached to {attach_audio(cards, notes, tmp)} card(s)")
+            print(f"audio attached to {attach_audio(cards, notes, tmp, a.domain)} card(s)")
         allowed = invoke("canAddNotes", notes=notes)
         to_add = [n for n, ok in zip(notes, allowed) if ok]
         ids = invoke("addNotes", notes=to_add) if to_add else []

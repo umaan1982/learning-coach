@@ -54,8 +54,11 @@ def save_progress(domain, prog, units):
             w.writerow({k: prog[uid].get(k, "") for k in FIELDS})
 
 
+PACE = {"unit_weeks": 1.0}  # set from profile.md (unit_weeks) in main()
+
+
 def weight(u):
-    return TEST_WEIGHT if u["unit"].startswith("MT") else 1.0
+    return TEST_WEIGHT if u["unit"].startswith("MT") else PACE["unit_weeks"]
 
 
 def dates(domain, today):
@@ -73,7 +76,8 @@ def build_schedule(units, start, deadline):
     else:
         buffer = 0
     tests = [u for u in units if u["unit"].startswith("MT")] or units[-1:]
-    per_gap = max(0.0, buffer) / max(1, len(tests))
+    # at most 1 buffer week after each module test; the rest stays as reserve before the exam
+    per_gap = min(1.0, max(0.0, buffer) / max(1, len(tests)))
     t = start + dt.timedelta(weeks=PLACEMENT_WEEKS)
     plan, wk = [], 0.0
     for u in units:
@@ -139,7 +143,10 @@ def cmd_schedule(a, units, prog, today):
         if buffer < 0:
             print(f"! {abs(buffer):.1f} weeks short: compress M1 (3 days/unit) or test out units")
         else:
-            print(f"buffer: {buffer:.1f} weeks spread after module tests (holidays, illness)")
+            tests = [u for u in units if u["unit"].startswith("MT")] or units[-1:]
+            spread = min(buffer, len(tests) * 1.0)
+            print(f"buffer: {buffer:.1f} weeks ({spread:.1f} after module tests for holidays/illness"
+                  + (f", {buffer - spread:.1f} reserve before the exam: room for a slower pace or extra review)" if buffer > spread else ")"))
     return 0
 
 
@@ -215,6 +222,10 @@ def main() -> int:
     if getattr(a, "score", None) is not None and a.score > 1:
         a.score /= 100  # accept 84 as 0.84
     today = dt.date.fromisoformat(a.today) if a.today else dt.date.today()
+    try:
+        PACE["unit_weeks"] = float(read_front_matter(domain_dir(a.domain) / "profile.md").get("unit_weeks") or 1)
+    except ValueError:
+        pass
     units = load_units(a.domain)
     prog = load_progress(a.domain)
     return {"status": cmd_status, "schedule": cmd_schedule, "start": cmd_start,

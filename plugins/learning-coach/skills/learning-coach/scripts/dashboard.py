@@ -110,6 +110,10 @@ def collect(domain, today):
     course = None
     try:
         import course as C
+        try:
+            C.PACE["unit_weeks"] = float(profile.get("unit_weeks") or 1)
+        except ValueError:
+            pass
         units = C.load_units(domain)
         prog = C.load_progress(domain)
         start, dl = C.dates(domain, today)

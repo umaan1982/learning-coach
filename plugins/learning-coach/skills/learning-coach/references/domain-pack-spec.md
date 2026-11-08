@@ -7,12 +7,22 @@ A domain pack teaches the generic engine about one subject. The engine (SKILL.md
 ```
 domains/<domain-id>/
 ├── domain.md          # overview + everything the session blocks need
-├── placement.md       # diagnostic test spec
+├── placement.md       # diagnostic test spec (self-rating, router, sections with stop + ceiling rules, sub-levels, external benchmark)
+├── ctest.md           # optional: C-test texts + provisional level cut-offs for scripts/ctest.py
 ├── syllabus.md        # ordered content list (name it by subject, e.g. grammar-syllabus.md, and point to it from domain.md)
 ├── course.csv         # the course map: one row per unit/module test, in teaching order (see below)
 ├── course.md          # modules, entry rules from placement, weekly lesson pattern, one worked example unit
 ├── exam-format.md     # how mastery is assessed (official exam or a defined benchmark)
 └── sources.md         # trusted materials for grounding and for input tasks
+```
+
+## domain.md front matter
+```
+---
+tts_lang: de-DE      # voice locale for speak.py (e.g. fr-FR)
+asr_lang: de         # recognition language for pronounce.py (e.g. fr)
+asr_model: small     # bigger for low-resource languages (medium / large-v3)
+---
 ```
 
 ## domain.md must contain

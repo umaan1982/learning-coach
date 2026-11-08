@@ -20,12 +20,14 @@ The structured course for this domain. The unit list (teaching order, can-do goa
 Plus: 1 week placement and setup, about 2 buffer weeks (holidays, illness), and 1 taper week before the exam. That's 28–30 weeks in total, which fits a November start for a June exam.
 
 ## Entry rules (from placement)
-| Placement result | Start at | Earlier units |
+| Overall sub-level (`placement.md`) | Start at | Earlier units |
 |------------------|----------|---------------|
-| A1 or weak A2 (grammar A2 band < 4/6) | U01 | – |
-| Solid A2 (A2 band ≥ 5/6, B1.1 band < 4/6) | U01 compressed: 3 days per unit in M1 | M1 units can be tested out one by one |
-| A2+ / low B1 (B1.1 band ≥ 4/6) | U05 | U01–U04 `tested-out`; their grammar stays in spiral recall |
-| Solid B1 (B1.2 band ≥ 4/6, reading ≥ B1) | U10 or M5 | discuss with the learner; exam training may be enough |
+| A1 or A2.1 | U01 | – |
+| A2.2 | U01 compressed: 3 days per unit in M1 | M1 units can be tested out one by one |
+| B1.1 | U05 | U01–U04 `tested-out`; their grammar stays in spiral recall |
+| B1.2 (reading ≥ B1) | U10 or M5 | discuss with the learner; exam training may be enough |
+
+If the external benchmark (Goethe/DW placement) is lower than our sub-level, start at the lower one.
 
 ## Weekly lesson pattern: 2 train slots per weekday + 1 home slot
 Train slots: screen and headphones yes, speaking aloud no. Home slot: speaking aloud yes.

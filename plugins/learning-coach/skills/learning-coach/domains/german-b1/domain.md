@@ -1,3 +1,9 @@
+---
+tts_lang: de-DE
+asr_lang: de
+asr_model: small
+---
+
 # Domain: German B1 (Goethe-Zertifikat B1)
 
 The first domain pack. It tells the generic engine what each session block contains for German at A2→B1, how to assess progress, and what typical mistakes look like.
