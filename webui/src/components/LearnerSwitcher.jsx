@@ -101,7 +101,7 @@ export default function LearnerSwitcher({ learner, learners, busy }) {
     <>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="outline" size="sm" className="gap-2 pl-1" disabled={busy}>
+          <Button variant="outline" size="sm" className="shrink-0 gap-2 pl-1" disabled={busy}>
             <Avatar l={learner} className="size-5" />
             {learner.name}
             <ChevronDown className="opacity-60" />

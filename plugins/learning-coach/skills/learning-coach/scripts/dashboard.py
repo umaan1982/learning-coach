@@ -114,7 +114,7 @@ def collect(domain, today):
             C.PACE["unit_weeks"] = float(profile.get("unit_weeks") or 1)
         except ValueError:
             pass
-        units = C.load_units(domain)
+        units, _ = C.learner_path(C.load_units(domain), profile)  # this learner's slice of the course map
         prog = C.load_progress(domain)
         start, dl = C.dates(domain, today)
         plan, _ = C.build_schedule(units, start, dl)
@@ -293,7 +293,9 @@ CSS = """
 @media (prefers-color-scheme:dark){:root:where(:not([data-theme="light"])) .viz-root{color-scheme:dark;--surface-1:#1a1a19;--page:#0d0d0d;
 --text-primary:#f0efec;--text-secondary:#c3c2b7;--grid:#2c2c2a;--axis:#383835;--good:#0ca30c;--bad:#e66767;--ring:rgba(255,255,255,.10);
 --series-1:#3987e5;--series-2:#d95926;--series-3:#199e70;--series-4:#c98500;--band:rgba(57,135,229,.14)}}
-*{box-sizing:border-box}body{margin:0;background:var(--page);font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
+*{box-sizing:border-box}html{background:#f9f9f7;color-scheme:light}
+@media (prefers-color-scheme:dark){html{background:#0d0d0d;color-scheme:dark}}
+body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
 .viz-root{background:var(--page);color:var(--text-primary);max-width:600px;margin:0 auto;padding:20px 16px 40px}
 h1{font-size:15px;font-weight:600;color:var(--text-secondary);margin:0 0 4px}
 .hero{font-size:56px;font-weight:600;line-height:1.05;margin:4px 0}.hero small{font-size:18px;font-weight:500;color:var(--text-secondary)}
@@ -377,7 +379,7 @@ def render(m, today):
                  f'<div class="card"><h2>Open mistake patterns</h2><p class="cap">Last 30 days, most frequent first. These drive your practice.</p>{chart_patterns(m["patterns"])}</div>'
                  f'<div class="card"><h2>Practice mix</h2><p class="cap">Time per strand, last 30 days</p>{chart_strands(m["strands"])}</div>'
                  + tables(m))
-    return (f'<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
+    return (f'<!DOCTYPE html><html lang="en" translate="no"><head><meta charset="utf-8"><meta name="google" content="notranslate"><meta name="viewport" content="width=device-width,initial-scale=1">'
             f'<title>Progress · {E(m["goal"])}</title><style>{CSS}</style></head><body><div class="viz-root">{body}</div>'
             f'<div id="tip" role="status"></div><script>{JS}</script></body></html>')
 

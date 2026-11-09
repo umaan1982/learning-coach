@@ -58,7 +58,13 @@ export function learnerFromRequest(req) {
   return getLearner(m ? m[1] : "default");
 }
 
-const cleanName = (name) => String(name || "").replace(/\s+/g, " ").trim().slice(0, 40);
+// "aimen" -> "Aimen": names are shown as names (first letter of each word capitalised).
+const cleanName = (name) =>
+  String(name || "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 40)
+    .replace(/(^|\s)(\p{Ll})/gu, (m, sp, ch) => sp + ch.toUpperCase());
 
 export function addLearner(name) {
   const n = cleanName(name);
