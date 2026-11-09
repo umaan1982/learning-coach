@@ -42,7 +42,8 @@ function placementSections() {
 function moduleNames() {
   const out = {};
   for (const line of read(path.join(SKILL_DIR, "domains", DOMAIN, "course.md")).split(/\r?\n/)) {
-    const m = line.match(/^\|\s*(M\d+)\s+([^|]+?)\s*\|\s*([^|]+?)\s*\|\s*([^|]+?)\s*\|/);
+    // module ids: M1…M5, and level modules such as A1/A2
+    const m = line.match(/^\|\s*(M\d+|[A-C]\d)\s+([^|]+?)\s*\|\s*([^|]+?)\s*\|\s*([^|]+?)\s*\|/);
     if (m) out[m[1]] = { name: m[2], units: m[3], level: m[4] };
   }
   return out;
@@ -56,7 +57,7 @@ function parseSchedule(raw) {
   for (const line of raw.split(/\r?\n/)) {
     let m;
     if ((m = line.match(/^start (\S+).*deadline (\S+)/))) head = { start: m[1], deadline: m[2] };
-    else if ((m = line.match(/^\s+(\d{2} \w{3} \d{4})\s+(\S+)\s+(M\d+)\s+(.+?)(?:\s+\[([^\]]+)\])?\s*$/))) {
+    else if ((m = line.match(/^\s+(\d{2} \w{3} \d{4})\s+(\S+)\s+(M\d+|[A-C]\d)\s+(.+?)(?:\s+\[([^\]]+)\])?\s*$/))) {
       units.push({ week: m[1], unit: m[2], module: m[3], title: m[4], status: m[5] || "" });
     } else if (/^(buffer:|!)/.test(line)) bufferLine = line.replace(/^!\s*/, "").trim();
   }

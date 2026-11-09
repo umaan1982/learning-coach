@@ -55,6 +55,27 @@ Training moves: read the items *before* listening (prediction, from the metacogn
 
 **Practice with the coach:** the coach plays the partner in Teil 1 and the examiner/partner in Teil 3. Do at least one session with a real human before the exam to rehearse under some pressure (speaking anxiety correlates r ≈ −.36 with performance).
 
+## Lower goals: Start Deutsch 1 (A1) and Goethe-Zertifikat A2
+For learners whose `goal_level` is A1 or A2 (module tests MTA1 and MTA2 in `course.csv`). ◐ Structure as widely documented from the official Modellsätze; check durations, parts and pass rules against the current Übungssatz on the Goethe-Institut site before the first mock (`sources.md`), and whether the centre runs the exam modular.
+
+**Start Deutsch 1 (A1)**, pass ≈ 60% of the points
+| Part | Time | Tasks |
+|------|------|-------|
+| Hören | ~20 min | T1 short everyday dialogues (a/b/c) · T2 announcements (richtig/falsch) · T3 phone messages (a/b/c) |
+| Lesen | ~25 min | T1 short notes and messages (richtig/falsch) · T2 adverts or web pages (pick a/b) · T3 signs and notices (richtig/falsch) |
+| Schreiben | ~20 min | T1 fill in a form from a short text · T2 short message, about 30 words, covering three points |
+| Sprechen | ~15 min, group | T1 introduce yourself (name, age, country, home town, languages, job, hobby; spell a word, say a number) · T2 ask and answer questions on a topic with word cards · T3 make requests and react, with picture cards |
+
+**Goethe-Zertifikat A2**, pass ≈ 60% per part
+| Part | Time | Tasks |
+|------|------|-------|
+| Lesen | ~30 min | 4 parts: short newspaper text, information board/directory, email, adverts |
+| Hören | ~30 min | 4 parts: announcements/radio, a conversation, phone messages, an interview |
+| Schreiben | ~30 min | T1 short message (SMS, ~20–30 words) · T2 email, informal or semi-formal (~30–40 words) |
+| Sprechen | ~15 min, pairs | T1 ask and answer with word cards · T2 talk about your life (topic card) · T3 plan something together |
+
+Rating for Schreiben/Sprechen at A1/A2: task completion (every content point), comprehensibility, and range/accuracy appropriate to the level. Don't apply B1 criteria.
+
 ## Mock procedure
 1. Pick the module the plan says (rotate; weakest gets extra).
 2. Timed and closed-book. For Hören, use the official audio.

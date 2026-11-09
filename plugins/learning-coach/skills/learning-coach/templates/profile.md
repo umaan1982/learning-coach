@@ -1,11 +1,13 @@
 ---
 domain: {{domain}}
 goal: 
+goal_level: 
 deadline: 
 start_date: {{today}}
-anki_deck: 
+anki_deck: none
 desired_retention: 0.90
 level_estimate: not yet placed
+start_unit: 
 reading_mode: focus
 unit_weeks: 1
 ---

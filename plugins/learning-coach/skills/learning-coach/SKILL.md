@@ -35,7 +35,7 @@ Why this matters: the hardest part of self-study isn't content (there's plenty o
 - `errors.csv`: every mistake with a pattern tag (this drives what gets practised)
 - `sessions.csv`: one row per session (this drives progress reports)
 - `notes/`: placement results, mock results, voice-chat reports
-- Flashcards live in **Anki**, not in these files.
+- Flashcards: in **Anki** if the learner uses it; otherwise in `<data>/<domain>/anki-import.csv`, which the coach reviews with them (coach-run review, §6).
 
 Run scripts with the skill directory as the base, e.g. `python "<skill-dir>/scripts/progress.py" --domain german-b1`.
 
@@ -93,25 +93,25 @@ Templates and the full rules are in `references/message-style.md`. Read it befor
 
 ## 4. Onboarding
 
-Goal: a profile good enough to run placement. Keep it to a few short questions, and skip anything already known from the conversation. Onboarding is a **short conversation, not one long message**. Each turn sends one focus-mode chunk: what's saved plus the single most important question. The Anki setup and the other extras come in the next turns. The full details go into `profile.md`.
+Goal: a profile good enough to run placement. Keep it to a few short questions, and skip anything already known from the conversation. Onboarding is a **short conversation, not one long message**. Each turn sends one focus-mode chunk: what's saved plus the single most important question. The extras come in the next turns. The full details go into `profile.md`.
 
 1. Run `python scripts/init_learner.py --domain <id>` to create the data folder from `templates/`.
 2. Read `domains/<id>/domain.md` for what this domain needs to know.
 3. Fill `profile.md`:
-   - **Goal** and **deadline**
+   - **Goal**, **goal level** (`goal_level`, the level the goal needs, e.g. A1 for *Start Deutsch 1*) and **deadline**. The course runs from the placement level to this level, so a beginner aiming for A1 gets an A1 course, not the pack's top level.
    - **Time slots**: each with minutes, whether a screen, audio and speaking aloud are possible, and where it happens (e.g. "morning train, 35 min, screen yes, headphones yes, speak aloud no")
-   - **Anki deck name**
    - An **implementation intention** for each slot: "When I sit down on the 7:40 train, I open the session." Concrete if-then plans measurably improve follow-through.
 4. Ask the domain's **onboarding extras** (`domain.md`, "Onboarding extras"): practical things that decide success outside the lessons, e.g. booking the exam and its format. Batch them into one short message, and keep onboarding messages in focus mode too. Save the full details in `profile.md`, not in the chat.
-5. Check Anki: `python scripts/anki_connect.py check`. If it isn't reachable, explain the one-time setup (Anki desktop + AnkiConnect add-on, FSRS on, desired retention 0.90) and continue. Cards are queued in a CSV until Anki is available.
+5. **Anki is optional.** Ask once, in one line: "Do you want flashcards in the Anki app (needs a one-time install), or should I run the review myself?" Default and recommended for new learners: **coach-run review** (`anki_deck: none`). Only if they want Anki: ask the deck name, run `python scripts/anki_connect.py check`, and if it isn't reachable explain the one-time setup (Anki desktop + AnkiConnect add-on, FSRS on, desired retention 0.90). Never make Anki a step that blocks placement or lessons, and don't bring it up again unless the learner asks.
 6. Move straight to placement, or schedule it for the learner's next slot.
 
 ## 5. Placement (diagnosis before teaching)
 
 Mastery learning only works if you know where the learner actually is. Self-reports like "a bit rusty" are unreliable. Use the domain's `placement.md`. It defines sections, items, stopping rules and scoring. General principles:
 
-- **Self-rating first.** Before any item, the learner rates themselves on the domain's can-do statements. At the end, show self-rating next to the result. Learners misjudge themselves, and seeing the gap is useful in itself.
-- **Route, then probe.** If the domain has a quick global measure (e.g. a C-test, `ctest.py`), run it first and start the skill sections around its result instead of at the bottom. Use the learner's background the same way: a near-native speaker doesn't start at A1 items.
+- **Background and goal first.** Before any item, ask briefly how the learner has learned so far (how, how long, how recently, where they use it now) and read their goal level from the profile. Together they decide the route and how far up to test: a complete beginner aiming for A1 gets a short starter check, not the global measure; nobody is tested more than one band above their goal. The point of placement is **where the learner stands relative to their goal**, not a full ranking.
+- **Self-rating next.** The learner rates themselves on the domain's can-do statements (up to one band above the goal). At the end, show self-rating next to the result. Learners misjudge themselves, and seeing the gap is useful in itself.
+- **Route, then probe.** If the domain has a quick global measure (e.g. a C-test, `ctest.py`) and the learner's background reaches its lowest level, run it first and start the skill sections around its result instead of at the bottom. A near-native speaker doesn't start at A1 items, and a beginner doesn't start with a B2 text.
 - **Adaptive both ways:** a **stop rule** (e.g. 3 misses in a band → stop) and a **ceiling rule** (e.g. the first 4 items of a band right → band secure, move up). Total length should fit one slot. Split it across two slots if needed.
 - **Typed answers for anything scored on form** (rule 11). Record each answer's input mode (`typed`/`spoken`).
 - **Record as you go:** append each item, the answer and its score to `notes/placement-in-progress.md`, so a placement split across train rides can resume where it stopped. When it's finished, write the result file and delete the in-progress file.
@@ -119,7 +119,7 @@ Mastery learning only works if you know where the learner actually is. Self-repo
 - **Production over recognition.** Ask the learner to produce answers rather than pick them, so you see what they can actually use.
 - **Check against an official yardstick.** If the domain names a free external placement test, ask the learner to take it once and log both results in `benchmarks.csv`. When they differ by more than one sub-level, start at the lower one and note it for calibration.
 - **Output:** write `notes/placement-YYYY-MM-DD.md` with a level estimate per skill, the top gaps (as error-pattern tags), a vocabulary estimate if the domain has one, and the **plan**: a weekly slot allocation and phase plan to the deadline (the domain's `domain.md` has templates). Update `level_estimate` in `profile.md`.
-- **Set the course entry point:** use the domain's entry rules (`course.md`) to pick the starting unit. Mark earlier units with `course.py testout`, start the first one with `course.py start`, and show the learner the plan with `course.py schedule`.
+- **Set the course entry point:** write the overall sub-level at the start of `level_estimate` and make sure `goal_level` is set. `course.py` then applies the domain's entry rules (`course.md`, `entry` column) and builds the learner's path up to the goal level; `start_unit` in the profile overrides the entry if you and the learner agree on another start. Start the first unit with `course.py start`, and show the learner their path with `course.py schedule`. Include **where they stand vs the goal** (now, goal, path length, hours needed vs available) in the result.
 - **Tell the learner the result in focus mode:** level, top 3 gaps and the daily plan in a few lines. Link to the notes file for the rest.
 - **Be honest about feasibility.** Compare the remaining distance (domain's hour estimates) with available minutes × days to the deadline. If it's tight, say so and propose options: more minutes, a narrower goal, a later date, or prioritising the modules that matter.
 
@@ -135,7 +135,7 @@ Read `profile.md` (which slot is this? what does it allow?), the last few rows o
 | Block | Purpose | Typical share | Evidence |
 |-------|---------|---------------|----------|
 | 0. Check-in | Minutes available? One progress number. Any review due? | <1 min | habit, metacognition |
-| 1. Recall | Due Anki cards (learner reviews in Anki), then 3–6 cued production items from recent errors | 25–35% | retrieval practice, spacing |
+| 1. Recall | Due Anki cards (learner reviews in Anki), or without Anki: 8–12 coach-run review items from the queued cards, oldest first, then 3–6 cued production items from recent errors | 25–35% | retrieval practice, spacing |
 | 2. Learn | 1–3 new items or one grammar point: guess first, then explicit explanation, then guided reps | 15–25% | generation, explicit instruction |
 | 3. Contrast | Interleaved mini-drill on one confusable pair from the error log | 10–15% | interleaving of similar categories |
 | 4. Use it | Output task (speak or write, per slot constraints) with hint → self-correct → redo | 20–30% | output hypothesis, corrective feedback |
@@ -165,7 +165,7 @@ Follow `references/state-files.md` exactly so the scripts can read the files.
 
 1. Append one row to `sessions.csv`: date, slot, minutes, blocks done, recall attempts and first-try correct answers, new items, output tasks, a short note.
 2. Append each new mistake to `errors.csv` with a **skill** value and a **pattern tag**, both from the domain's `domain.md`. If a pattern was answered correctly three times in a row across different days, mark it resolved.
-3. Queue new cards: write them to a CSV and run `python scripts/anki_connect.py add --deck "<deck>" --file <csv>`. If Anki isn't reachable, the script appends them to `<data>/anki-import.csv` for later import. Card format comes from the domain pack. As a rule: cue on the front, target-language production on the back, plus an example sentence.
+3. Queue new cards: write them to a CSV and run `python scripts/anki_connect.py add --deck "<deck>" --file <csv>`. If Anki isn't reachable, or the learner doesn't use it (`anki_deck: none`), the script appends them to `<data>/anki-import.csv`: for later import, or as the deck for coach-run review. Card format comes from the domain pack. As a rule: cue on the front, target-language production on the back, plus an example sentence.
 4. Tell the learner, in one line, what tomorrow's first target is.
 
 ## 8. Import (practice outside the skill)

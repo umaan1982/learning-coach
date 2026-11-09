@@ -23,6 +23,9 @@ export function parseCourseStatus(raw) {
       out.current.notes.push(m[1]);
     } else if (out.current && (m = t.match(/^day (\d+) of this unit/))) {
       out.current.day = Number(m[1]);
+    } else if ((m = t.match(/^path:\s*(\S+?)\s*[–-]\s*(\S+)\s*\((\d+) units?\)\s*·\s*goal\s*(\S+)\s*·\s*(.*)$/))) {
+      // "path: A01–MTA1 (9 units) · goal A1 · entry for placement A1.0" (course.py: the learner's own slice)
+      out.path = { from: m[1], to: m[2], units: Number(m[3]), goal: m[4], how: m[5] };
     } else if ((m = t.match(/^plan: should be at (\S+) this week; buffer ([+-]?[\d.]+) weeks before (\S+)/))) {
       out.plan = { unitThisWeek: m[1], bufferWeeks: Number(m[2]), deadline: m[3] };
     } else if ((m = t.match(/^->\s*(.*)$/))) {

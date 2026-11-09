@@ -1,6 +1,8 @@
-# Course: German A2 → Goethe-Zertifikat B1
+# Course: German A1 → A2 → Goethe-Zertifikat B1
 
-The structured course for this domain. The unit list (teaching order, can-do goals, grammar, exam task, prerequisites) is in `course.csv`. How the engine runs a course is in `references/curriculum.md`.
+The structured course for this domain. The unit list (teaching order, can-do goals, grammar, exam task, prerequisites, `level`, `entry`) is in `course.csv`. How the engine runs a course is in `references/curriculum.md`.
+
+**One course, many paths.** The map runs from complete beginner to B1. Each learner does only their part of it: from the unit their placement level enters at (entry rules below) to the last unit of their **goal level** (`goal_level` in `profile.md`, e.g. A1 for *Start Deutsch 1*). `course.py` works this out, so the plan, the schedule and the on-track check always refer to the learner's own path.
 
 ## Design basis
 - **Order by fields of action, not by grammar.** Units follow the *Handlungsfelder* of the Rahmencurriculum für Integrationskurse (e.g. Wohnen, Arbeit, Gesundheit, Ämter und Behörden), plus its cross-cutting areas (social contacts, feelings and opinions, conflicts, the migration situation, one's own language learning). Grammar and vocabulary in each unit are the ones the situation needs.
@@ -11,23 +13,34 @@ The structured course for this domain. The unit list (teaching order, can-do goa
 ## Modules
 | Module | Units | Level | Weeks (guide) | Ends with |
 |--------|-------|-------|---------------|-----------|
+| A1 Grundstufe A1 | A01–A08 | A1 | 8 | MTA1: Start Deutsch 1 mock (all four parts) |
+| A2 Grundstufe A2 | B01–B06 | A2 | 6 | MTA2: Goethe-Zertifikat A2 mock (all four parts) |
 | M1 Refresh | U01–U04 | A2 consolidation | 4 | MT1: Lesen T1+T3 + mixed check |
 | M2 B1 Teil 1 | U05–U09 | B1.1 | 5 | MT2: Hören full + mixed check |
 | M3 B1 Teil 2 | U10–U14 | B1.1 → B1.2 | 5 | MT3: Schreiben full + mixed check |
 | M4 B1 Teil 3 | U15–U20 | B1.2 | 6 | MT4: Sprechen full + mixed check |
 | M5 Prüfungstraining | U21–U24 | exam | 4 | the real exam |
 
-Plus: 1 week placement and setup, about 2 buffer weeks (holidays, illness), and 1 taper week before the exam. That's 28–30 weeks in total, which fits a November start for a June exam.
+Plus: 1 week placement and setup, about 2 buffer weeks (holidays, illness), and 1 taper week before the exam. From A2.2 to B1 that's 28–30 weeks, which fits a November start for a June exam. From zero to A1 it's about 10 weeks at one unit a week; A1 is roughly 150 guided hours (`domain.md` §2), so a shorter deadline needs more daily time or `unit_weeks` below 1, and the coach says so at placement.
+
+**Where each path ends** (`level` column): goal A1 → MTA1; goal A2 → MTA2 (the A2-consolidation module M1 belongs to the B1 track); goal B1 → U24. Module tests of the A1 and A2 modules are mocks of *Start Deutsch 1* and *Goethe-Zertifikat A2* (`exam-format.md`).
 
 ## Entry rules (from placement)
+Encoded in the `entry` column of `course.csv`, so `course.py` applies them automatically. `start_unit` in `profile.md` overrides them (e.g. after a discussion with the learner).
+
 | Overall sub-level (`placement.md`) | Start at | Earlier units |
 |------------------|----------|---------------|
-| A1 or A2.1 | U01 | – |
+| no German, A1.0 or A1.1 | A01 | – |
+| A1.2 or A2.1 | B01 | A1 units can be tested out one by one if the learner wants |
 | A2.2 | U01 compressed: 3 days per unit in M1 | M1 units can be tested out one by one |
 | B1.1 | U05 | U01–U04 `tested-out`; their grammar stays in spiral recall |
-| B1.2 (reading ≥ B1) | U10 or M5 | discuss with the learner; exam training may be enough |
+| B1.2 (reading ≥ B1) | U10 (or M5, see below) | discuss with the learner; exam training may be enough |
+| B2 | U21 (exam training) | – |
+| not placed yet | A01 for goals A1/A2, U01 for B1 | provisional until placement |
 
-If the external benchmark (Goethe/DW placement) is lower than our sub-level, start at the lower one.
+If the external benchmark (Goethe/DW placement) is lower than our sub-level, start at the lower one. A learner placed at or above their goal level gets only the goal's mock test as exam training.
+
+**A1 and A2 lessons** use the same weekly pattern below with smaller steps: more read-while-listening and repetition, shorter output (single sentences, then 30-word messages), and lots of chunk work (*Ich hätte gern …*, *Wie spät ist es?*) before grammar rules.
 
 ## Weekly lesson pattern: 2 train slots per weekday + 1 home slot
 Train slots: screen and headphones yes, speaking aloud no. Home slot: speaking aloud yes.

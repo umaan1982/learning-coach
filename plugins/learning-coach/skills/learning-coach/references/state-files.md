@@ -9,11 +9,13 @@ YAML front matter followed by free notes. Only the front-matter keys are machine
 ---
 domain: german-b1
 goal: Pass Goethe-Zertifikat B1 (all four modules)
+goal_level: B1         # level the goal needs; the course path ends there (A1 / A2 / B1 …)
 deadline: 2027-06-30
 start_date: 2026-11-08
-anki_deck: Deutsch B1
+anki_deck: none        # optional: a deck name if the learner uses Anki; none = coach-run review
 desired_retention: 0.90
-level_estimate: not yet placed
+level_estimate: not yet placed   # after placement: starts with the overall sub-level, e.g. "A2.2 overall; A2 writing"
+start_unit:            # optional: overrides the course entry rules (e.g. B03)
 reading_mode: focus
 unit_weeks: 1          # course pace: 1 = a unit per week, 2 = every two weeks, 0.6 = three days
 ---

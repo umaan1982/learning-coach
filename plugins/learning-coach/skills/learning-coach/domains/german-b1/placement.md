@@ -1,6 +1,6 @@
 # Placement: German (A1–B2)
 
-Purpose: estimate the level per skill, down to a **sub-level** (A2.1, A2.2, B1.1, B1.2), and find the top gaps before teaching. Total ~45–55 min, split into two parts so each fits one slot. **No teaching during placement.** Give neutral acknowledgements only, and explain this to the learner first ("this is a measurement; we'll fix everything afterwards").
+Purpose: find out **where the learner stands relative to their goal**: the level per skill, down to a **sub-level** (A1.0 … B1.2), the top gaps, and the distance to the goal level in hours and weeks. It starts from what the learner already did with German (Part 0), so a beginner aiming for A1 never sits through B1 items, and someone aiming for B1 isn't tested only on basics. Total ~30–55 min depending on level, split into two parts so each fits one slot. **No teaching during placement.** Give neutral acknowledgements only, and explain this to the learner first ("this is a measurement; we'll fix everything afterwards").
 
 The design borrows the *methods* of established placement tests, never their items:
 - **Self-rating first** (DIALANG): the learner rates themselves before testing; the gap between self-rating and result is shown at the end.
@@ -13,33 +13,72 @@ The design borrows the *methods* of established placement tests, never their ite
 - **Typed answers only** in Part 1. Dictation can turn German into English words or drop endings; a dictated answer measures the recogniser, not the learner. If a dictated answer arrives anyway, score only what's clearly not a dictation artefact, mark it `spoken` in the record, and confirm with one typed item.
 - One item per message (one C-test text counts as one item). Accept a missing umlaut written as ae/oe/ue but note it.
 - **Ceiling rule:** when the first 4 items of a band are all right, mark the band secure and move up. **Stop rule:** 3 misses within a band → skip the higher bands.
+- **Goal ceiling:** test up to **one band above the goal level**, not further (goal A1 → items up to A2; goal A2 → up to B1.1; goal B1 → the full range). Above that, the result changes nothing in the plan.
 - Record every answer with its input mode (`typed`/`spoken`) in `notes/placement-in-progress.md`, and every miss with a pattern tag (`domain.md` §6) so `errors.csv` starts populated.
 
 ---
 
-## Part 0: Self-rating (≈2 min, one message)
-"Rate each from 0 to 2: 0 = no, 1 = with effort, 2 = yes, easily." Save the ratings; don't comment on them.
+## Part 0: Background, goal and self-rating (≈4 min, two messages)
 
-| Skill | A2 statement | B1 statement |
-|-------|--------------|--------------|
-| Listening | I understand short, clear announcements and simple everyday conversations. | I understand the main points of radio news or a conversation about familiar topics when people speak clearly. |
-| Reading | I can find information in short everyday texts like adverts, menus and timetables. | I understand personal emails and short articles about everyday topics, including feelings and opinions. |
-| Speaking | I can handle short everyday exchanges: shopping, directions, simple plans. | I can talk about experiences and plans, give reasons for my opinion and handle most travel situations. |
-| Writing | I can write a short simple note or message about everyday things. | I can write a connected personal email about experiences and impressions. |
+**0a. Background (one message, numbered, answers can be short).** Read the goal and `goal_level` from `profile.md` first, and don't ask again what's already there.
+1. How have you learned German so far? (not at all · a few words or an app · a course: which level? · school · living in a German-speaking country)
+2. For how long, and how long ago?
+3. Where do you use German now, if at all (work, shopping, neighbours, children's school)?
+4. Any certificate or course level (e.g. "finished A1 at the VHS")?
 
-Self-rated level per skill: both 2 → B1; A2 = 2 and B1 ≤ 1 → A2; else below A2.
+Record the answers in `placement-in-progress.md` and pick a **route**:
 
-## Part 1 (screen, no audio needed, ~30 min)
+| Background | Route |
+|-----------|-------|
+| **None or only single words** (never studied, or an app for a few weeks) | **Starter route:** S (starter check) instead of the C-test, then B and C from the A1 band |
+| **Some** (an A1 course, months of an app, everyday phrases) | **Router:** C-test text 1 only; < 30% → starter route; otherwise continue the C-test |
+| **A2 or more** (A2 course or certificate, years in the country with daily use) | **Full route:** full C-test, then B and C as written |
 
-### A. C-test (≈20 min, router)
+When background and self-rating disagree, take the lower route: the starter check takes 10 minutes, and a beginner facing a B2 C-test text is a bad first lesson.
+
+**0b. Self-rating.** "Rate each from 0 to 2: 0 = no, 1 = with effort, 2 = yes, easily." Ask only up to one band above the goal (goal A1 → the A1 and A2 columns). Save the ratings; don't comment on them.
+
+| Skill | A1 statement | A2 statement | B1 statement |
+|-------|--------------|--------------|--------------|
+| Listening | I understand slow, simple questions about me and very common words (numbers, times, prices). | I understand short, clear announcements and simple everyday conversations. | I understand the main points of radio news or a conversation about familiar topics when people speak clearly. |
+| Reading | I understand single words and very short texts like signs, names and a simple form. | I can find information in short everyday texts like adverts, menus and timetables. | I understand personal emails and short articles about everyday topics, including feelings and opinions. |
+| Speaking | I can introduce myself and ask and answer simple questions about where I live and what I need. | I can handle short everyday exchanges: shopping, directions, simple plans. | I can talk about experiences and plans, give reasons for my opinion and handle most travel situations. |
+| Writing | I can fill in a form with my details and write a few words on a card. | I can write a short simple note or message about everyday things. | I can write a connected personal email about experiences and impressions. |
+
+Self-rated level per skill: the highest band rated 2 where the band above is ≤ 1 (B1 = 2 → B1; A2 = 2 → A2; A1 = 2 → A1; else below A1).
+
+## Part 1 (screen, no audio needed, ~15–30 min)
+
+### A. C-test (≈20 min, router; skipped on the starter route)
+The C-test texts start at A2, so only learners on the router or full route take it (Part 0a). In the web UI the learner does it in the C-test tab.
 1. `python scripts/ctest.py make --domain german-b1` builds today's test (4 texts, A2 → B2, 20 gaps each).
 2. Explain once: "Each text has words with the second half missing. Type the missing letters, or the whole word, with the gap number: `1 ung 2 im …`. About 5 minutes per text. Guess if unsure."
 3. Send one text per message: `ctest.py show --domain german-b1 --text N`. Score each reply with `ctest.py score --domain german-b1 --text N --answers "<reply>"`. Don't show the misses.
-4. **Stop early** only if text 1 is below 30%: the learner is A1; skip the rest and run sections B and C from the A1 band.
+4. **Stop early** only if text 1 is below 30%: switch to the starter route (S), then B and C from the A1 band.
 5. `ctest.py result --domain german-b1` gives the C-test band (provisional cut-offs, see `ctest.md`).
 
+### S. Starter check (≈10 min; beginners, instead of the C-test)
+For the starter route. Short, friendly and typed (listening items use audio). Explain first: "This shows what you already know. Lots of blanks are normal at the start." One item per message; ask "?" for "I don't know". Score 1 per item (½ for a recognisable answer with a spelling slip).
+
+| # | Kind | Item | Expected |
+|---|------|------|----------|
+| 1–6 | Words (EN → DE, with der/die/das if they can) | hello · thank you · the woman · the child · water · today | Hallo / Guten Tag · danke · die Frau · das Kind · das Wasser · heute |
+| 7 | Form | Ich ___ Anna. (sein) | bin |
+| 8 | Form | Wie ___ du? (heißen) | heißt |
+| 9 | Form | Woher ___ Sie? (kommen) | kommen |
+| 10 | Form | Ich ___ zwei Kinder. (haben) | habe |
+| 11 | Question | Make a question: Sie wohnen in Berlin. | Wohnen Sie in Berlin? |
+| 12 | Number | Write 17 in words. | siebzehn |
+| 13 | Reading | Show a door sign: *„Praxis Dr. Weber – Mo–Fr 8–12 Uhr. Heute geschlossen!"* Ask: Can you see the doctor today? | no (heute geschlossen) |
+| 14 | Reading | Show a text message: *„Hallo Lena, ich komme um 7 Uhr. Bis später! Tom"* Ask: When does Tom come? | 7 Uhr / at seven |
+| 15 | Listening (`speak.py say "Der Zug nach Hamburg fährt um 8 Uhr 15 von Gleis 3." --speed both`) | When does the train leave? | 8:15 |
+| 16 | Listening (`speak.py say "Mein Name ist Schmidt. S-C-H-M-I-D-T."`) | Write the name. | Schmidt |
+| 17–18 | Speaking (voice dictation is fine here) | "Stellen Sie sich vor: Name, Land, Wohnort, Sprachen." Score 2 = all four points understandable, 1 = some | – |
+
+**Estimate (18 points):** < 6 → **A1.0** (beginner); 6–12 → **A1.1**; ≥ 13 → **A1.2**: also run B from the A1 band and C-test text 1 to check whether A2 has started.
+
 ### B. Grammar: production and transformation (≈8 min)
-Start **one band below the C-test band** (A2.1 → A1, A2.2 → A1, B1.1 → A2, B1.2 or B2 → B1.1). Ask each item as written. Ceiling and stop rules as above.
+Start **one band below the C-test band** (A2.1 → A1, A2.2 → A1, B1.1 → A2, B1.2 or B2 → B1.1). After the starter check, start at A1 (skip B for A1.0: the starter items already cover it). Ask each item as written. Ceiling, stop and goal-ceiling rules as above.
 
 | # | Band | Item | Expected | Tag |
 |---|------|------|----------|-----|
@@ -82,9 +121,12 @@ Ask: "German for … (with article for nouns)". Start at the C-test band's vocab
 **Estimate:** band ≥8/10 = secure; 5–7 = partial; <5 = gap. A lower band not asked counts as secure. Rough vocabulary estimate: secure A1 ≈ 700 words, secure A2 ≈ 1,300, secure B1 ≈ 2,400 (Goethe list size). Interpolate for partial bands.
 
 ### Overall sub-level (end of Part 1)
-| C-test band | Grammar | Overall |
+| C-test band (or starter check) | Grammar | Overall |
 |-------------|---------|---------|
-| A2.1 or below | any | **A2.1** (A1 if C-test text 1 < 30%) |
+| starter check < 6 | – | **A1.0** |
+| starter check 6–12 | – | **A1.1** |
+| starter check ≥ 13 | A1 secure | **A1.2**; otherwise A1.1 |
+| A2.1 or below | any | **A2.1** (starter route if C-test text 1 < 30%) |
 | A2.2 | A2 secure | **A2.2**; otherwise A2.1 |
 | B1.1 | A2 secure + B1.1 partial or better | **B1.1**; otherwise A2.2 |
 | B1.2 or B2 | B1.1 secure | **B1.2**; otherwise B1.1 |
@@ -92,6 +134,8 @@ Ask: "German for … (with article for nouns)". Start at the C-test band's vocab
 When the two measures disagree, take the lower one: starting a little low costs a few days (units can be tested out), starting too high breaks mastery learning.
 
 ## Part 2 (needs headphones for G; ~25 min)
+
+**Match Part 2 to the goal and the Part 1 result.** For learners at A1.x or with goal A1/A2, use the goal's exam format (`exam-format.md`, *Start Deutsch 1* / *Goethe A2*) at their level instead of the B1 items below: D = a sign, a short message and an advert with richtig/falsch; E = a form plus a 30-word message; F = Sprechen T1–T3 of the A1/A2 exam; G = two short announcements made with `speak.py`. Keep it to ~15 min. Learners at A2.2 or above do Part 2 as written.
 
 ### D. Reading (≈10 min)
 Generate two texts on everyday topics in the style of Goethe Lesen Teil 1 (a personal blog or email):
@@ -141,8 +185,14 @@ Append a row to `<data>/benchmarks.csv` (`date,source,result,our_estimate,notes`
 | Speaking | B1 | ... | ... |
 | Listening | A2 | ... | ... |
 
+**Background:** e.g. "A1 course at the VHS in 2022, little use since; lives in Berlin."
 **Self-rating vs result:** e.g. "You rated speaking B1, the test says A2.2. Most learners over- or under-rate at least one skill."
 **External benchmark:** (filled when the learner pastes it)
+
+## Where you stand vs your goal
+- Now: **A1.1** · Goal: **A1** (*Start Deutsch 1*) by 15 Dec 2026
+- Course path (`course.py status`): A01–MTA1, 9 units, starting at A01
+- Distance: ~120–150 guided hours (domain.md §2) vs available N min/day × D days = H h → feasible / tight / not feasible, plus options (more minutes, later date, narrower goal such as Sprechen + Schreiben first)
 
 ## Top gaps (pattern tags)
 1. ...
@@ -154,4 +204,4 @@ Append a row to `<data>/benchmarks.csv` (`date,source,result,our_estimate,notes`
 - New cards per day: ...
 - Weekly slot allocation: ...
 ```
-Then set `level_estimate` in `profile.md` (e.g. `B1.1 overall; A2 writing`) and add the top gaps to "Top patterns".
+Then set `level_estimate` in `profile.md` (e.g. `B1.1 overall; A2 writing`; it must start with the overall sub-level, which `course.py` reads to pick the entry unit), make sure `goal_level` is set, and add the top gaps to "Top patterns". Run `course.py status` and `course.py schedule` to show the learner their own path.

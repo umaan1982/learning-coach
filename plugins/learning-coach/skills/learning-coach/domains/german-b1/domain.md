@@ -4,19 +4,19 @@ asr_lang: de
 asr_model: small
 ---
 
-# Domain: German B1 (Goethe-Zertifikat B1)
+# Domain: German A1 → B1 (Goethe: Start Deutsch 1, A2, B1)
 
-The first domain pack. It tells the generic engine what each session block contains for German at A2→B1, how to assess progress, and what typical mistakes look like.
+The first domain pack (its id stays `german-b1`). It tells the generic engine what each session block contains for German from complete beginner to B1, how to assess progress, and what typical mistakes look like. Each learner's goal level (`goal_level`: A1, A2 or B1) decides where their course ends; placement decides where it starts.
 
 Files in this pack:
-- `course.md` + `course.csv`: **the structured course**, 5 modules and 24 units (A2 refresh → B1 → exam training), weekly lesson pattern, entry rules
+- `course.md` + `course.csv`: **the structured course**, A1 and A2 modules plus 5 B1-track modules (38 units, A1 → B1 → exam training), weekly lesson pattern, entry rules
 - `placement.md`: diagnostic test (run once at the start, repeat any section later to re-check)
 - `grammar-syllabus.md`: A1 refresher → B1 grammar in teaching order, with confusable pairs
 - `exam-format.md`: Goethe-Zertifikat B1 modules, task types, scoring and criteria (used for module tests and mocks)
 - `sources.md`: official word list and practice sets, plus graded reading and listening materials
 
 ## 1. Goal and level descriptors
-**Target:** pass all four modules of the Goethe-Zertifikat B1 (≥60/100 each). Modules can be passed separately.
+**Targets by `goal_level`:** A1 → *Start Deutsch 1* (or telc A1); A2 → *Goethe-Zertifikat A2*; B1 → all four modules of the *Goethe-Zertifikat B1* (≥60/100 each; modules can be passed separately). Formats: `exam-format.md`. The descriptors below are for B1; A1 and A2 are the CEFR levels below it (A1: introduce yourself, simple questions about personal details and immediate needs; A2: routine everyday exchanges, describe your background and surroundings).
 
 CEFR B1 in brief: understands the main points of clear standard speech and texts on familiar topics (work, school, leisure); handles most travel situations; writes simple connected text on familiar topics; describes experiences, events, hopes and plans; gives brief reasons and explanations for opinions.
 
@@ -25,8 +25,11 @@ German integration courses (BAMF) take a beginner to B1 in **600 teaching units 
 
 | Placement result | Remaining guided hours (rough) |
 |------------------|-------------------------------|
-| A1 | ~300–350 h |
-| A2 (rusty) | ~200–250 h |
+| Beginner (A1.0) → goal A1 | ~120–150 h |
+| Beginner (A1.0) → goal A2 | ~250–300 h |
+| A1 → goal B1 | ~300–350 h |
+| A1.2 → goal A2 | ~100–150 h |
+| A2 (rusty) → goal B1 | ~200–250 h |
 | Solid A2 | ~150–200 h |
 | Low B1 | ~80–120 h, mostly exam skills and output |
 
@@ -173,7 +176,7 @@ Tags: `b1` plus a topic (`wohnen`, `arbeit`, …) or the pattern tag (`case-afte
 ## 8. Phase plan template (count back from the exam date)
 | Phase | Weeks before exam | Focus | Weekly mock |
 |-------|-------------------|-------|-------------|
-| Placement | first week | `placement.md`, plan, Anki setup | – |
+| Placement | first week | `placement.md`, plan, Anki setup only if the learner wants it | – |
 | Foundation | until ~16 weeks before | close A2 grammar gaps, heavy B1 vocabulary (≈15–20 new cards/day), daily short output, listening habit | month-end: 1 reading part |
 | Build | 16 → 6 weeks before | full grammar syllabus, longer output (exam-length emails, Teil 1/2 speaking), longer input | monthly: one full module, rotating |
 | Exam mode | last 6 weeks | timed full modules weekly, Redemittel polish, speaking under exam conditions with a human at least once, taper in the final week | weekly |

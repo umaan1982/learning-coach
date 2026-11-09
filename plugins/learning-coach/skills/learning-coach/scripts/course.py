@@ -2,7 +2,12 @@
 """Course progress: where am I, what's next, am I on track? (stdlib only)
 
 Reads the domain's course map (domains/<id>/course.csv), the learner's
-course-progress.csv and profile.md (start_date, deadline).
+course-progress.csv and profile.md (start_date, deadline, goal_level, level_estimate, start_unit).
+
+A course map may span several levels (course.csv columns `level` and `entry`). Each learner gets
+their own path: from the unit their placement level enters at (or `start_unit`) up to the last
+unit of their goal level. An A1 learner aiming for A1 never sees the B1 units, and a B1 learner
+never sees the A1 ones. status/schedule/check work on that path.
 
   status   --domain ID                       current unit, next step, on-track check
   schedule --domain ID                       planned week for every unit (with buffers)
@@ -18,6 +23,7 @@ import argparse
 import csv
 import datetime as dt
 import math
+import re
 import sys
 
 from _common import SKILL_DIR, domain_dir, read_front_matter
@@ -33,6 +39,49 @@ def load_units(domain):
         sys.exit(f"no course map at {path}")
     with open(path, newline="", encoding="utf-8") as f:
         return list(csv.DictReader(f))
+
+
+# ---------------------------------------------------------------- the learner's path
+RANK = {"A0": 0, "A1": 1, "A2": 2, "A2+": 2.5, "B1": 3, "B2": 4, "C1": 5, "C2": 6}
+LEVEL = re.compile(r"\b(A0|A1|A2|B1|B2|C1|C2)(?:\.\d)?\b")
+PATH_INFO = {"text": ""}
+
+
+def goal_level(profile):
+    """`goal_level` (A1/A2/B1 …), or the first CEFR level named in `goal`."""
+    g = (profile.get("goal_level") or "").strip().upper()
+    if g in RANK:
+        return g
+    m = LEVEL.search(profile.get("goal") or "")
+    return m.group(1) if m else None
+
+
+def learner_path(units, profile):
+    """(path, how): the slice of the course map this learner actually does."""
+    if not units or "level" not in units[0]:
+        return units, "whole course"  # single-level packs without a `level` column
+    ids = [u["unit"] for u in units]
+    goal = goal_level(profile)
+    m = LEVEL.search(profile.get("level_estimate") or "")
+    placed = m.group(0) if m else None  # e.g. "A1.0", "B1.1", "A2"
+    start = (profile.get("start_unit") or "").strip()
+    how = f"start_unit {start}"
+    if start not in ids:
+        entries = {u["unit"]: [t.strip() for t in (u.get("entry") or "").split(";") if t.strip()] for u in units}
+        find = lambda tok: next((uid for uid, toks in entries.items() if tok in toks), None)
+        start = (find(placed) or find(placed.split(".")[0])) if placed else None
+        how = f"entry for placement {placed}"
+        if not start and goal:
+            start, how = find(f"default-{goal}"), f"not placed yet: default start for goal {goal}"
+        if not start:
+            start, how = ids[0], "first unit"
+    i = ids.index(start)
+    last = len(units) - 1
+    if goal:
+        last = max((k for k, u in enumerate(units) if RANK.get(u.get("level", ""), 99) <= RANK[goal]), default=last)
+    if i > last:  # placed at or above the goal: the goal level's final test is the exam training
+        return [units[last]], f"{how}; already at goal level {goal}"
+    return units[i:last + 1], how
 
 
 def load_progress(domain):
@@ -103,6 +152,7 @@ def cmd_status(a, units, prog, today):
     cur = first_open(units, prog)
     done = sum(1 for u in units if prog.get(u["unit"], {}).get("status") in DONE)
     print(f"course: {done}/{len(units)} units done")
+    print(PATH_INFO["text"])
     if not cur:
         print("all units done: exam time. Taper, light review, sleep well.")
         return 0
@@ -136,6 +186,7 @@ def cmd_schedule(a, units, prog, today):
     start, deadline = dates(a.domain, today)
     plan, buffer = build_schedule(units, start, deadline)
     print(f"start {start}  ·  placement {PLACEMENT_WEEKS} wk  ·  taper {TAPER_WEEKS} wk  ·  deadline {deadline or '?'}")
+    print(PATH_INFO["text"])
     for u, d in plan:
         st = prog.get(u["unit"], {}).get("status", "")
         print(f"  {d:%d %b %Y}  {u['unit']:4s} {u['module']}  {u['title']}" + (f"  [{st}]" if st else ""))
@@ -222,11 +273,17 @@ def main() -> int:
     if getattr(a, "score", None) is not None and a.score > 1:
         a.score /= 100  # accept 84 as 0.84
     today = dt.date.fromisoformat(a.today) if a.today else dt.date.today()
+    profile = read_front_matter(domain_dir(a.domain) / "profile.md")
     try:
-        PACE["unit_weeks"] = float(read_front_matter(domain_dir(a.domain) / "profile.md").get("unit_weeks") or 1)
+        PACE["unit_weeks"] = float(profile.get("unit_weeks") or 1)
     except ValueError:
         pass
-    units = load_units(a.domain)
+    all_units = load_units(a.domain)
+    path, how = learner_path(all_units, profile)
+    goal = goal_level(profile)
+    PATH_INFO["text"] = f"path: {path[0]['unit']}–{path[-1]['unit']} ({len(path)} units) · goal {goal or '?'} · {how}"
+    # start/testout accept any unit of the map; everything else follows the learner's path
+    units = all_units if a.cmd in ("start", "testout") else path
     prog = load_progress(a.domain)
     return {"status": cmd_status, "schedule": cmd_schedule, "start": cmd_start,
             "check": cmd_check, "testout": cmd_testout}[a.cmd](a, units, prog, today)

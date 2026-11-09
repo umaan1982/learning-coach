@@ -38,7 +38,9 @@ asr_model: small     # bigger for low-resource languages (medium / large-v3)
 10. **Onboarding extras:** practical questions to ask once at onboarding that decide success outside the lessons, e.g. booking the exam, the exam format (paper or digital), an external level check, or what interview rounds cover.
 
 ## Course map (course.csv)
-Columns: `unit,module,title,field,can_do,grammar,exam_task,prereq,spiral`. Units are `U01…`, module tests `MT1…`, and prerequisites are `;`-separated unit ids. Design it the way institutions do (`references/curriculum.md`):
+Columns: `unit,module,title,field,can_do,grammar,exam_task,prereq,spiral,level,entry`. Units are `U01…` (any short id), module tests start with `MT` (`MT1`, `MTA1`), and prerequisites are `;`-separated unit ids.
+
+`level` and `entry` (optional) let one map serve several goals: `level` is the level a unit belongs to (e.g. A1, A2, B1; `A2+` = consolidation on the way to B1), and `entry` lists the placement sub-levels that start at that unit, plus `default-<goal level>` for learners not yet placed (e.g. `A1.0;A1.1;default-A1`). `course.py` then gives each learner the slice from their entry unit to the last unit of their `goal_level`. Packs without these columns run the whole map for everyone. Design it the way institutions do (`references/curriculum.md`):
 - Order by real-world situations or tasks, with the needed content derived from them.
 - One week per unit, 4–6 units per module, a module test after each module, and exam training at the end.
 - Every unit names its can-do goals and the target-format task it practises.

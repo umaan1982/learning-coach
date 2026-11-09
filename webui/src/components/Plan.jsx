@@ -154,7 +154,10 @@ function YourPath({ plan }) {
               : "About 50 minutes, in two parts"}
         </PathStep>
         <PathStep state={courseState} title="3. Course">
-          {c?.parsed ? `${c.done} of ${c.total} units · about one unit a week` : "Units of about one week each"}
+          {c?.parsed
+            ? `${c.done} of ${c.total} units${c.path?.goal && c.path.goal !== "?" ? ` to ${c.path.goal}` : ""} · about one unit a week` +
+              (plan.placement.status !== "done" ? " · set after placement" : "")
+            : "Units of about one week each"}
         </PathStep>
         <PathStep state={c?.finished ? "current" : "todo"} title="4. Exam" last>
           {plan.profile.deadline ? fmtDate(plan.profile.deadline) : "Your exam date"} · the last week is light review
@@ -267,6 +270,7 @@ function CourseOverview({ c, reload, loading }) {
         <CardTitle>Course progress</CardTitle>
         <CardDescription>
           {c.done} of {c.total} units done
+          {c.path && ` · your path ${c.path.from}–${c.path.to}, up to ${c.path.goal}`}
         </CardDescription>
         <CardAction className="flex items-center gap-1">
           {st && <Badge className={st.className}>{st.label}</Badge>}
@@ -296,8 +300,8 @@ function CourseOverview({ c, reload, loading }) {
           <div className="flex gap-2 rounded-lg border border-red-500/30 bg-red-500/10 p-2.5 text-sm">
             <TriangleAlert className="mt-0.5 size-4 shrink-0 text-red-600" />
             <span>
-              The course needs about {Math.abs(c.plan.bufferWeeks)} more weeks than you have. Ask the coach to shorten
-              Module 1 (3 days per unit) or to let you test out of units you already know.
+              Your path needs about {Math.abs(c.plan.bufferWeeks)} more weeks than you have. Ask the coach for options:
+              more study time per day, shorter units, testing out of units you already know, or a later date.
             </span>
           </div>
         )}
@@ -381,7 +385,8 @@ function Schedule({ plan }) {
           <CalendarClock className="size-4" /> Full schedule
         </CardTitle>
         <CardDescription>
-          {byModule.length} modules · {s.units.filter((u) => !u.unit.startsWith("MT")).length} units of about a week · module tests in the exam format
+          {byModule.length} {byModule.length === 1 ? "module" : "modules"} · {s.units.filter((u) => !u.unit.startsWith("MT")).length} units of
+          about a week · module tests in the exam format
         </CardDescription>
       </CardHeader>
       <CardContent>
