@@ -26,6 +26,8 @@ Double-click `start-ui.cmd` in the repo root, or run it from a terminal:
 | `start-ui.cmd` | your real data, `~/learning-coach-data` (daily use) |
 | `start-ui.cmd sandbox` | a throwaway practice folder in the temp dir, for trying things out; your real data is blocked |
 
+If the server crashes, the launcher restarts it after 5 seconds (no new browser tab; it gives up after 5 crashes). Starts, errors, normal stops and crashes are written to `~/learning-coach-profiles/server.log` (no chat text). Closing the console window stops the server on purpose, so keep it open (it starts minimised fine). `LC_NO_OPEN=1` starts without opening a tab.
+
 It installs the packages on first run (and again whenever `package-lock.json` changes, e.g. after a `git pull`), starts the server and opens http://127.0.0.1:5178 in your default browser (any browser works). If the UI is already running, it just opens the page. Close the console window to stop. It runs through `cmd.exe`, so PowerShell's script execution policy doesn't matter.
 
 Developer equivalents: `cd webui`, then `npm run dev` / `npm run dev:sandbox` (or `npm.cmd …` in PowerShell).

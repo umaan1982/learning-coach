@@ -22,5 +22,28 @@ if errorlevel 1 (
 set MODE=
 if /i "%~1"=="sandbox" set MODE=--sandbox
 
-node server\index.js %MODE% --open
-if errorlevel 1 pause
+rem Run the server. After a crash (exit code 1) start it again by itself, without opening another
+rem browser tab. Exit 0 = stopped normally or already running; 2 = a problem a restart can't fix.
+rem Give up after 5 crashes so a broken setup doesn't loop forever. The log: server.log in
+rem %USERPROFILE%\learning-coach-profiles (sandbox: next to the sandbox folder).
+set OPEN=--open
+if defined LC_NO_OPEN set OPEN=
+set CRASHES=0
+:run
+node server\index.js %MODE% %OPEN%
+set CODE=%errorlevel%
+if "%CODE%"=="0" exit /b 0
+if "%CODE%"=="2" (
+  pause
+  exit /b 2
+)
+set /a CRASHES+=1
+if %CRASHES% GEQ 5 (
+  echo The server stopped 5 times. See %USERPROFILE%\learning-coach-profiles\server.log
+  pause
+  exit /b 1
+)
+echo The server stopped unexpectedly ^(code %CODE%^). Restarting in 5 seconds... Close this window to stop.
+timeout /t 5 /nobreak >nul
+set OPEN=
+goto run

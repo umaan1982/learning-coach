@@ -12,6 +12,7 @@ import { addLearner, ctxFor, getLearner, learnerFromRequest, listLearners, renam
 import { parseCourseStatus } from "./course.js";
 import { planState } from "./plan.js";
 import { runScript, transcribe } from "./scripts.js";
+import { LOG_FILE, log } from "./log.js";
 
 // ---------------------------------------------------------------- helpers
 const json = (res, status, body) => {
@@ -258,7 +259,9 @@ const server = http.createServer(async (req, res) => {
     if (vite) return vite.middlewares(req, res);
     return serveStatic(res, url);
   } catch (e) {
-    json(res, 500, { error: String(e.message || e) });
+    log("request error", req.method, url.pathname, e);
+    if (!res.headersSent) json(res, 500, { error: String(e.message || e) });
+    else res.end();
   }
 });
 
@@ -302,7 +305,8 @@ server.on("error", async (e) => {
   if (e.code !== "EADDRINUSE") throw e;
   if (await reuseRunning()) process.exit(0);
   console.error(`Port ${PORT} is used by another program. Set PORT to another number and try again.`);
-  process.exit(1);
+  log(`port ${PORT} in use by another program`);
+  process.exit(2); // 2 = don't restart (start-ui.cmd restarts only after a crash)
 });
 
 if (await reuseRunning()) process.exit(0);
@@ -318,6 +322,15 @@ server.listen(PORT, HOST, () => {
   console.log(`  learners ${listLearners().map((l) => l.name).join(", ")}`);
   console.log(`  skill  ${SKILL_DIR}`);
   console.log(`  claude ${CLAUDE_BIN || "NOT FOUND (set CLAUDE_BIN)"}`);
-  console.log("  Close this window (or press Ctrl+C) to stop.");
+  console.log(`  log    ${LOG_FILE}`);
+  console.log("  Close this window (or press Ctrl+C) to stop. After a crash it restarts by itself.");
+  log(`started on ${URL_} (pid ${process.pid}${SANDBOX ? ", sandbox" : ""})`);
   openBrowser();
 });
+// Note a normal stop too, so the log tells "closed" apart from "crashed".
+for (const sig of ["SIGINT", "SIGTERM", "SIGBREAK", "SIGHUP"]) {
+  process.on(sig, () => {
+    log(`stopped (${sig})`);
+    process.exit(0);
+  });
+}
